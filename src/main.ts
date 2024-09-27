@@ -5,15 +5,17 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Set up Swagger
+  // Swagger configuration
   const config = new DocumentBuilder()
-    .setTitle('Job Application API')
-    .setDescription('API documentation for the Job Application application')
+    .setTitle('Job Application Backend')
+    .setDescription('OAS 3.0 API description')  // Custom subtitle
     .setVersion('1.0')
-    .build();
+    .build();  // This was missing
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('swagger', app, document);
 
   await app.listen(7000);
 }
+
 bootstrap();
