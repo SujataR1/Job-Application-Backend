@@ -45,24 +45,24 @@ export class SignUpDto {
   email: string;
 
   @IsPhoneNumber(null)
-  @IsNotEmpty()
-  phoneNumber: string;
+  @IsOptional()
+  phoneNumber?: string;
 
   @IsString()
   @IsNotEmpty()
   password: string;
 
-  @IsEnum(['applicant', 'recruiter']) // Assuming 'applicant' or 'recruiter' are the only valid user types
+  @IsEnum(['Applicant', 'Recruiter']) // Assuming 'applicant' or 'recruiter' are the only valid user types
   @IsNotEmpty()
   userType: string;
 
   @IsString()
   @IsOptional() // Optional field, since it may be empty for some users
-  lookingForApply?: string;
+  lookingForApply?: boolean;
 
   @IsBoolean()
-  @IsNotEmpty()
-  lookingForRecruit: boolean;
+  @IsOptional()
+  lookingForRecruit?: boolean;
 
   @IsOptional()
   @IsString()
