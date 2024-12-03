@@ -9,6 +9,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserType } from '@prisma/client';
+import { Transform } from 'class-transformer';
 
 export class SignUpDto {
   @ApiProperty({ description: 'Full name of the user' })
@@ -45,20 +46,28 @@ export class SignUpDto {
   @IsNotEmpty()
   userType: UserType;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Whether the user is looking to apply for jobs',
     example: false,
   })
+  @Transform(({ value }) => {
+    if (value === 'true') return true; // Convert "true" string to true
+    if (value === 'false') return false; // Convert "false" string to false
+    return value; // Leave actual booleans untouched
+  })
   @IsBoolean()
-  @IsOptional()
   lookingToApply?: boolean;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Whether the user is looking to recruit candidates',
     example: true,
   })
+  @Transform(({ value }) => {
+    if (value === 'true') return true; // Convert "true" string to true
+    if (value === 'false') return false; // Convert "false" string to false
+    return value; // Leave actual booleans untouched
+  })
   @IsBoolean()
-  @IsOptional()
   lookingToRecruit?: boolean;
 
   @ApiPropertyOptional({

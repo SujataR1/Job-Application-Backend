@@ -1,45 +1,29 @@
-// import { NestFactory } from '@nestjs/core';
-// import { AppModule } from './app.module';
-// import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-
-// async function bootstrap() {
-//   const app = await NestFactory.create(AppModule);
-
-//   // Swagger configuration
-//   const config = new DocumentBuilder()
-//     .setTitle('Job Application Backend')
-//     .setDescription('OAS 3.0 API description')  // Custom subtitle
-//     .setVersion('1.0')
-//     .build();  // This was missing
-
-//   const document = SwaggerModule.createDocument(app, config);
-//   SwaggerModule.setup('swagger', app, document);
-
-//   await app.listen(7000);
-// }
-
-// bootstrap();
-
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'; // Import Swagger modules
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable validation globally
-  app.useGlobalPipes(new ValidationPipe());
+  // Enable validation globally with transformation
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true, // Enable transformation of input data
+      whitelist: true, // Automatically remove properties not in DTO
+      forbidNonWhitelisted: true, // Reject requests with extra properties
+    }),
+  );
 
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('Job Application Backend')
     .setDescription('Job Application API Description')
     .setVersion('1.0')
-    .build(); // Build the Swagger config
+    .build();
 
-  const document = SwaggerModule.createDocument(app, config); // Create Swagger document
-  SwaggerModule.setup('swagger', app, document); // Set up Swagger at /swagger route
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('swagger', app, document);
 
   // Enable CORS for the frontend
   app.enableCors({
