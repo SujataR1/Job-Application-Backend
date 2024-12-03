@@ -17,6 +17,7 @@ model Job {
   location    String
   salary      Float?
   postedAt    DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 }
 
 enum UserType {
@@ -34,8 +35,11 @@ model User {
   lookingToApply     Boolean
   lookingToRecruit   Boolean
   profilePicturePath String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now()) @updatedAt
 }
 
 model Blacklisted_Tokens {
-  blacklistedToken String @id @unique
+  blacklistedToken String   @id @unique
+  blacklistedAt    DateTime @default(now())
 }
