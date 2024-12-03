@@ -1,30 +1,3 @@
-// // src/auth/dto/sign-up.dto.ts
-// import { IsEmail, IsNotEmpty, IsPhoneNumber, IsString, IsOptional } from 'class-validator';
-
-// export class SignUpDto {
-//   @IsNotEmpty()
-//   fullName: string;
-
-//   @IsEmail()
-//   email: string;
-
-//   @IsPhoneNumber()
-//   phoneNumber: string;
-
-//   @IsString()
-//   password: string;
-
-//   @IsString()
-//   userType: string;
-
-//   lookingForApply: boolean;
-//   lookingForRecruit: boolean;
-
-//   // Add this property to allow storing the profile image path (optional)
-//   @IsOptional()
-//   profileImage?: string;  // This will hold the file path or URL of the uploaded image
-// }
-
 import {
   IsString,
   IsEmail,
