@@ -66,7 +66,7 @@ export class AuthController {
     type: LoginDto,
   })
   @ApiResponse({
-    status: 200,
+    status: 201,
     description: 'Login successful.',
   })
   @ApiResponse({

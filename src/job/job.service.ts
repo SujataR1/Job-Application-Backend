@@ -16,20 +16,20 @@ export class JobService {
     return this.prisma.job.findMany();
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return this.prisma.job.findUnique({
       where: { id },
     });
   }
 
-  update(id: number, data: Prisma.JobUpdateInput) {
+  update(id: string, data: Prisma.JobUpdateInput) {
     return this.prisma.job.update({
       where: { id },
       data,
     });
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return this.prisma.job.delete({
       where: { id },
     });
