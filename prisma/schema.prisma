@@ -37,5 +37,5 @@ model User {
 }
 
 model Blacklisted_Tokens {
-  blacklistedToken String @unique
+  blacklistedToken String @id @unique
 }
