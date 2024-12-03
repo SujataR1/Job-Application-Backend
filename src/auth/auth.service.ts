@@ -10,7 +10,6 @@ import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express'; // Import Express Response
 import { Utilities } from '../utils/Utilities';
 import * as bcrypt from 'bcrypt';
-import { error } from 'console';
 
 @Injectable()
 export class AuthService {
@@ -81,7 +80,9 @@ export class AuthService {
     const decoded = await Utilities.VerifyJWT(authorizationHeader);
 
     if (!decoded) {
-      throw new UnauthorizedException('Invalid or expired token');
+      throw new InternalServerErrorException(
+        'There has been an error on our end',
+      );
     }
 
     // Add the token to the Blacklisted_Tokens table
