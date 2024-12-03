@@ -86,7 +86,16 @@ export class AuthService {
   constructor(private readonly prisma: PrismaService) {}
 
   async signUp(signUpDto: SignUpDto) {
-    const { email, password, fullName, phoneNumber, userType, lookingForApply, lookingForRecruit, profileImage } = signUpDto;
+    const {
+      email,
+      password,
+      fullName,
+      phoneNumber,
+      userType,
+      lookingForApply,
+      lookingForRecruit,
+      profileImage,
+    } = signUpDto;
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);

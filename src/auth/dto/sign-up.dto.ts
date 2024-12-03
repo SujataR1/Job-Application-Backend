@@ -25,9 +25,15 @@
 //   profileImage?: string;  // This will hold the file path or URL of the uploaded image
 // }
 
-
-
-import { IsString, IsEmail, IsOptional, IsBoolean, IsNotEmpty, IsPhoneNumber, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsBoolean,
+  IsNotEmpty,
+  IsPhoneNumber,
+  IsEnum,
+} from 'class-validator';
 
 export class SignUpDto {
   @IsString()
@@ -61,5 +67,5 @@ export class SignUpDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  profileImage?: string;  // Optional, since profile image can be null
+  profileImage?: string; // Optional, since profile image can be null
 }

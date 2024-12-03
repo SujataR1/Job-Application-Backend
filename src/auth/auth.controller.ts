@@ -1,4 +1,10 @@
-import { Controller, Post, Body, UseInterceptors, UploadedFile } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/sign-up.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -12,10 +18,13 @@ export class AuthController {
 
   // Sign-up endpoint with file upload handling
   @Post('sign-up')
-  @UseInterceptors(FileInterceptor('profileImage'))  // Handle file upload for profile image
-  async signUp(@Body() signUpDto: SignUpDto, @UploadedFile() profileImage: Express.Multer.File) {
+  @UseInterceptors(FileInterceptor('profileImage')) // Handle file upload for profile image
+  async signUp(
+    @Body() signUpDto: SignUpDto,
+    @UploadedFile() profileImage: Express.Multer.File,
+  ) {
     if (profileImage) {
-      signUpDto.profileImage = profileImage.filename;  // Save the filename or path to DB (depending on your logic)
+      signUpDto.profileImage = profileImage.filename; // Save the filename or path to DB (depending on your logic)
     }
     return this.authService.signUp(signUpDto);
   }
