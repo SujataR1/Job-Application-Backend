@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Res,
   Body,
   UseInterceptors,
   UploadedFile,
@@ -9,6 +10,7 @@ import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/sign-up.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { LoginDto } from './dto/login.dto'; // Import LoginDto
+import { Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -73,7 +75,7 @@ export class AuthController {
     status: 401,
     description: 'Invalid credentials.',
   })
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto, @Res() res: Response) {
+    return this.authService.login(loginDto, res);
   }
 }
