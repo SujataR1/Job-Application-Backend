@@ -12,16 +12,17 @@ export class AuthController {
 
   // Sign-up endpoint with file upload handling
   @Post('sign-up')
-  @UseInterceptors(FileInterceptor('profileImage'))  // Handle file upload for profile image
-  async signUp(@Body() signUpDto: SignUpDto, @UploadedFile() profileImage: Express.Multer.File) {
-    if (profileImage) {
-      signUpDto.profileImage = profileImage.filename;  // Save the filename or path to DB (depending on your logic)
+  @UseInterceptors(FileInterceptor('profileImage'))
+  async signUp(@Body() signUpDto: SignUpDto, @UploadedFile() file: Express.Multer.File) {
+    // If a profile image is uploaded, attach it to the DTO
+    if (file) {
+      signUpDto.profileImage = file.path; // Or however you want to handle the file path
     }
     return this.authService.signUp(signUpDto);
   }
 
   // Login endpoint
-  @Post('login')
+  @Post('login')  
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
