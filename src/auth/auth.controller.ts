@@ -1,14 +1,18 @@
 import {
   Controller,
   Post,
+  Res,
   Body,
+  Headers,
   UseInterceptors,
   UploadedFile,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/sign-up.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { LoginDto } from './dto/login.dto'; // Import LoginDto
+import { Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -66,14 +70,36 @@ export class AuthController {
     type: LoginDto,
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
     description: 'Login successful.',
   })
   @ApiResponse({
     status: 401,
     description: 'Invalid credentials.',
   })
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto, @Res() res: Response) {
+    return this.authService.login(loginDto, res);
+  }
+
+  @Post('logout')
+  @ApiOperation({
+    summary: 'Logout User',
+    description:
+      'Logs out the user by validating the token in the Authorization header and adding it to the blacklist to prevent further use.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Logout successful. The token is blacklisted.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid, expired, or blacklisted token.',
+  })
+  async logout(@Headers('Authorization') authorizationHeader: string) {
+    try {
+      return await this.authService.logout(authorizationHeader);
+    } catch (error) {
+      throw new UnauthorizedException(error.message);
+    }
   }
 }

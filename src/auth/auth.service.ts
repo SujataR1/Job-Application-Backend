@@ -1,12 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { SignUpDto } from './dto/sign-up.dto';
 import { LoginDto } from './dto/login.dto';
+import { JwtService } from '@nestjs/jwt';
+import { Response } from 'express'; // Import Express Response
+import { Utilities } from '../utils/Utilities';
 import * as bcrypt from 'bcrypt';
+import { error } from 'console';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async signUp(signUpDto: SignUpDto) {
     const {
@@ -35,18 +46,54 @@ export class AuthService {
       },
     });
 
-    return { message: 'User created successfully!' };
+    if (!user) {
+      throw new InternalServerErrorException('Failed to create your account!');
+    }
+
+    return { message: 'Your account has been created successfully!' };
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, res: Response) {
     const { email, password } = loginDto;
 
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) throw new Error('User not found');
+    if (!user)
+      throw new Error('No user was found with the entered credentials');
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) throw new Error('Invalid password');
+    if (!isPasswordValid) throw new Error('Wrong password');
 
-    return { message: 'Login successful!' };
+    // Generate the JWT token
+    const payload = { id: user.id }; // Encode the user ID in the JWT payload
+    const token = this.jwtService.sign(payload);
+
+    // Set the token in the Authorization header
+    res.setHeader('Authorization', `Bearer ${token}`);
+
+    // Send the response
+    return res.status(200).json({
+      message: 'You have successfully logged in!',
+    });
+  }
+
+  async logout(authorizationHeader: string) {
+    // Use the VerifyJWT utility method to validate the token and get the payload
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+
+    if (!decoded) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    // Add the token to the Blacklisted_Tokens table
+    const token = authorizationHeader.split(' ')[1];
+    await this.prisma.blacklisted_Tokens.create({
+      data: {
+        blacklistedToken: token,
+      },
+    });
+
+    return {
+      message: 'You have successfully logged out!',
+    };
   }
 }

@@ -46,7 +46,7 @@ export class SignUpDto {
   @IsNotEmpty()
   userType: UserType;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Whether the user is looking to apply for jobs',
     example: false,
   })
@@ -55,10 +55,11 @@ export class SignUpDto {
     if (value === 'false') return false; // Convert "false" string to false
     return value; // Leave actual booleans untouched
   })
+  @IsOptional()
   @IsBoolean()
   lookingToApply?: boolean;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Whether the user is looking to recruit candidates',
     example: true,
   })
@@ -67,16 +68,17 @@ export class SignUpDto {
     if (value === 'false') return false; // Convert "false" string to false
     return value; // Leave actual booleans untouched
   })
+  @IsOptional()
   @IsBoolean()
-  lookingToRecruit?: boolean;
+  lookingToRecruit: boolean;
 
   @ApiPropertyOptional({
     description: 'Profile image filename or path (optional)',
     type: 'string',
     format: 'binary',
   })
-  @IsOptional()
   @IsString()
+  @IsOptional()
   @IsNotEmpty()
   profileImage?: string; // Optional since a profile image can be null
 }
