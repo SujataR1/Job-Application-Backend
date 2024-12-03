@@ -34,6 +34,7 @@ import {
   IsPhoneNumber,
   IsEnum,
 } from 'class-validator';
+import { UserType } from '@prisma/client';
 
 export class SignUpDto {
   @IsString()
@@ -52,17 +53,17 @@ export class SignUpDto {
   @IsNotEmpty()
   password: string;
 
-  @IsEnum(['Applicant', 'Recruiter']) // Assuming 'applicant' or 'recruiter' are the only valid user types
+  @IsEnum(UserType) // Assuming 'applicant' or 'recruiter' are the only valid user types
   @IsNotEmpty()
-  userType: string;
+  userType: UserType;
 
-  @IsString()
+  @IsBoolean()
   @IsOptional() // Optional field, since it may be empty for some users
-  lookingForApply?: boolean;
+  lookingToApply?: boolean;
 
   @IsBoolean()
   @IsOptional()
-  lookingForRecruit?: boolean;
+  lookingToRecruit?: boolean;
 
   @IsOptional()
   @IsString()

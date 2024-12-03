@@ -92,9 +92,8 @@ export class AuthService {
       fullName,
       phoneNumber,
       userType,
-      lookingForApply,
-      lookingForRecruit,
-      profileImage,
+      lookingToApply,
+      lookingToRecruit,
     } = signUpDto;
 
     // Hash the password
@@ -107,10 +106,9 @@ export class AuthService {
         password: hashedPassword,
         fullName,
         phoneNumber,
-        userType,
-        lookingForApply,
-        lookingForRecruit,
-        profileImage, // Store the file path or URL here
+        userType: userType,
+        lookingToApply,
+        lookingToRecruit, // Store the file path or URL here
       },
     });
 
