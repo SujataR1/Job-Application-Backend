@@ -81,7 +81,9 @@ export class AuthService {
     const decoded = await Utilities.VerifyJWT(authorizationHeader);
 
     if (!decoded) {
-      throw new UnauthorizedException('Invalid or expired token');
+      throw new InternalServerErrorException(
+        'There has been an error on our end',
+      );
     }
 
     // Add the token to the Blacklisted_Tokens table
