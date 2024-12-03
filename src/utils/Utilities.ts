@@ -1,6 +1,10 @@
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClient } from '@prisma/client'; // Import Prisma Client
-import { UnauthorizedException, NotFoundException } from '@nestjs/common';
+import {
+  UnauthorizedException,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 
 export class Utilities {
   private static jwtService = new JwtService({
@@ -17,14 +21,14 @@ export class Utilities {
    */
   static async VerifyJWT(authorizationHeader: string): Promise<any> {
     if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException(
+      throw new NotFoundException(
         'Could not find your session information. Please log in again.',
       );
     }
 
     const token = authorizationHeader.split(' ')[1]; // Extract token
     if (!token) {
-      throw new UnauthorizedException(
+      throw new NotFoundException(
         'Something went wrong with your session information. Please log in again.',
       );
     }
@@ -41,20 +45,22 @@ export class Utilities {
     }
 
     try {
-        // Verify and decode the token
-        const decoded = this.jwtService.verify(token);
-  
-        // Ensure the user exists in the database
-        const user = await this.prisma.user.findUnique({ where: { id: decoded.id } });
-        if (!user) {
-          throw new NotFoundException('We seem to have no records of you.!');
-        }
-  
-        return decoded; // Return the decoded payload
-      } catch (error) {
-        throw new UnauthorizedException(
-          'Your session has either expired or there is an issue on our end. Please try logging in again.',
-        );
+      // Verify and decode the token
+      const decoded = this.jwtService.verify(token);
+
+      // Ensure the user exists in the database
+      const user = await this.prisma.user.findUnique({
+        where: { id: decoded.id },
+      });
+      if (!user) {
+        throw new NotFoundException('We seem to have no records of you.!');
       }
+
+      return decoded; // Return the decoded payload
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Either your session has expired or there is an issue on our end. Please try logging in again.',
+      );
+    }
   }
 }
