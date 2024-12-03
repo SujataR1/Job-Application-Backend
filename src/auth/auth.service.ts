@@ -35,7 +35,7 @@ export class AuthService {
       },
     });
 
-    return { message: 'User created successfully', user };
+    return { message: 'User created successfully!' };
   }
 
   async login(loginDto: LoginDto) {
@@ -47,6 +47,6 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) throw new Error('Invalid password');
 
-    return { message: 'Login successful', user };
+    return { message: 'Login successful!' };
   }
 }
