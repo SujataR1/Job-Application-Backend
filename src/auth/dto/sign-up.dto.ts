@@ -25,9 +25,14 @@
 //   profileImage?: string;  // This will hold the file path or URL of the uploaded image
 // }
 
+// sign-up.dto.ts
+  // Assuming lookingForRecruit is a boolean
 
 
-import { IsString, IsEmail, IsOptional, IsBoolean, IsNotEmpty, IsPhoneNumber, IsEnum } from 'class-validator';
+
+import { IsString, IsEmail, IsOptional, IsBoolean, IsNotEmpty, IsEnum, Matches } from 'class-validator';
+
+const phoneNumberRegex = /^[0-9+\-()]*$/;
 
 export class SignUpDto {
   @IsString()
@@ -38,7 +43,9 @@ export class SignUpDto {
   @IsNotEmpty()
   email: string;
 
-  @IsPhoneNumber(null)
+  @Matches(phoneNumberRegex, {
+    message: 'phoneNumber must be a valid phone number (including international with + or local)',
+  })
   @IsNotEmpty()
   phoneNumber: string;
 
@@ -46,20 +53,42 @@ export class SignUpDto {
   @IsNotEmpty()
   password: string;
 
-  @IsEnum(['applicant', 'recruiter']) // Assuming 'applicant' or 'recruiter' are the only valid user types
+  @IsEnum(['applicant', 'recruiter'])
   @IsNotEmpty()
   userType: string;
 
+
   @IsString()
-  @IsOptional() // Optional field, since it may be empty for some users
-  lookingForApply?: string;
+  @IsOptional()
+  lookingForApply?: string; // This should accept strings like "0", "1"
 
   @IsBoolean()
   @IsNotEmpty()
   lookingForRecruit: boolean;
 
+
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  profileImage?: string;  // Optional, since profile image can be null
+  profileImage?: string;
 }
+
+
+// POST:Response: signup
+// {
+//   "fullName": "Johnn Doe",
+//   "email": "johndoe1@example.com",
+//   "password": "securePassword1233",
+//   "phoneNumber": "1234567890",
+//   "userType": "applicant",
+//   "lookingForApply": "1",
+//   "lookingForRecruit": false,
+//   "profileImage": "path/to/image.jpg"
+// }
+
+
+// //login-POST
+// { 
+//   "email": "johndoe1@example.com",
+//   "password": "securePassword1233"
+// }
