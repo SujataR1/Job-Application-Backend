@@ -7,39 +7,67 @@ import {
   IsPhoneNumber,
   IsEnum,
 } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserType } from '@prisma/client';
 
 export class SignUpDto {
+  @ApiProperty({ description: 'Full name of the user' })
   @IsString()
   @IsNotEmpty()
   fullName: string;
 
+  @ApiProperty({
+    description: 'Email address of the user',
+    example: 'user@example.com',
+  })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
+  @ApiPropertyOptional({
+    description: 'Phone number of the user',
+    example: '+1234567890',
+  })
   @IsPhoneNumber(null)
   @IsOptional()
   phoneNumber?: string;
 
+  @ApiProperty({ description: 'Password for the account' })
   @IsString()
   @IsNotEmpty()
   password: string;
 
-  @IsEnum(UserType) // Assuming 'applicant' or 'recruiter' are the only valid user types
+  @ApiProperty({
+    description: "Type of user ('Applicant' or 'Recruiter')",
+    enum: UserType, // Enum values for Swagger documentation
+  })
+  @IsEnum(UserType) // Assuming 'applicant' or 'recruiter' are valid user types
   @IsNotEmpty()
   userType: UserType;
 
+  @ApiPropertyOptional({
+    description: 'Whether the user is looking to apply for jobs',
+    example: false,
+  })
   @IsBoolean()
-  @IsOptional() // Optional field, since it may be empty for some users
+  @IsOptional()
   lookingToApply?: boolean;
 
+  @ApiPropertyOptional({
+    description: 'Whether the user is looking to recruit candidates',
+    example: true,
+  })
   @IsBoolean()
   @IsOptional()
   lookingToRecruit?: boolean;
 
+  @ApiPropertyOptional({
+    description: 'Profile image filename or path (optional)',
+    type: 'string',
+    format: 'binary',
+  })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  profileImage?: string; // Optional, since profile image can be null
+  profileImage?: string; // Optional since a profile image can be null
 }
