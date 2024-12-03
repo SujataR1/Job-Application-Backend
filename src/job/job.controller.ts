@@ -1,10 +1,17 @@
-import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiBody } from '@nestjs/swagger';
 
 @ApiTags('Jobs')
 @Controller('jobs')
 export class JobsController {
-  
   @Get()
   @ApiOperation({ summary: 'Get all job applications' })
   getAllJobs() {

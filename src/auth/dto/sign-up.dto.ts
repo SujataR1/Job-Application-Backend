@@ -1,65 +1,84 @@
-// // src/auth/dto/sign-up.dto.ts
-// import { IsEmail, IsNotEmpty, IsPhoneNumber, IsString, IsOptional } from 'class-validator';
-
-// export class SignUpDto {
-//   @IsNotEmpty()
-//   fullName: string;
-
-//   @IsEmail()
-//   email: string;
-
-//   @IsPhoneNumber()
-//   phoneNumber: string;
-
-//   @IsString()
-//   password: string;
-
-//   @IsString()
-//   userType: string;
-
-//   lookingForApply: boolean;
-//   lookingForRecruit: boolean;
-
-//   // Add this property to allow storing the profile image path (optional)
-//   @IsOptional()
-//   profileImage?: string;  // This will hold the file path or URL of the uploaded image
-// }
-
-
-
-import { IsString, IsEmail, IsOptional, IsBoolean, IsNotEmpty, IsPhoneNumber, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsBoolean,
+  IsNotEmpty,
+  IsPhoneNumber,
+  IsEnum,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { UserType } from '@prisma/client';
+import { Transform } from 'class-transformer';
 
 export class SignUpDto {
+  @ApiProperty({ description: 'Full name of the user' })
   @IsString()
   @IsNotEmpty()
   fullName: string;
 
+  @ApiProperty({
+    description: 'Email address of the user',
+    example: 'user@example.com',
+  })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
+  @ApiPropertyOptional({
+    description: 'Phone number of the user',
+    example: '+1234567890',
+  })
   @IsPhoneNumber(null)
-  @IsNotEmpty()
-  phoneNumber: string;
+  @IsOptional()
+  phoneNumber?: string;
 
+  @ApiProperty({ description: 'Password for the account' })
   @IsString()
   @IsNotEmpty()
   password: string;
 
-  @IsEnum(['applicant', 'recruiter']) // Assuming 'applicant' or 'recruiter' are the only valid user types
+  @ApiProperty({
+    description: "Type of user ('Applicant' or 'Recruiter')",
+    enum: UserType, // Enum values for Swagger documentation
+  })
+  @IsEnum(UserType) // Assuming 'applicant' or 'recruiter' are valid user types
   @IsNotEmpty()
-  userType: string;
+  userType: UserType;
 
-  @IsString()
-  @IsOptional() // Optional field, since it may be empty for some users
-  lookingForApply?: string;
-
-  @IsBoolean()
-  @IsNotEmpty()
-  lookingForRecruit: boolean;
-
+  @ApiPropertyOptional({
+    description: 'Whether the user is looking to apply for jobs',
+    example: false,
+  })
+  @Transform(({ value }) => {
+    if (value === 'true') return true; // Convert "true" string to true
+    if (value === 'false') return false; // Convert "false" string to false
+    return value; // Leave actual booleans untouched
+  })
   @IsOptional()
+  @IsBoolean()
+  lookingToApply?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Whether the user is looking to recruit candidates',
+    example: true,
+  })
+  @Transform(({ value }) => {
+    if (value === 'true') return true; // Convert "true" string to true
+    if (value === 'false') return false; // Convert "false" string to false
+    return value; // Leave actual booleans untouched
+  })
+  @IsOptional()
+  @IsBoolean()
+  lookingToRecruit: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Profile image filename or path (optional)',
+    type: 'string',
+    format: 'binary',
+  })
   @IsString()
+  @IsOptional()
   @IsNotEmpty()
-  profileImage?: string;  // Optional, since profile image can be null
+  profileImage?: string; // Optional since a profile image can be null
 }

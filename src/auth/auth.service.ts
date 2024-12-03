@@ -1,92 +1,33 @@
-// // src/auth/auth.service.ts
-// import { Injectable } from '@nestjs/common';
-// import { PrismaService } from 'prisma/prisma.service';
-// import { SignUpDto } from './dto/sign-up.dto';
-// import { LoginDto } from './dto/login.dto';  // Import LoginDto here
-// import * as bcrypt from 'bcrypt';
-// import { JwtService } from '@nestjs/jwt';
-// import { Express } from 'express';
-// import * as path from 'path';
-// import * as fs from 'fs';
-
-// @Injectable()
-// export class AuthService {
-//   constructor(
-//     private prisma: PrismaService, // Inject PrismaService
-//     private jwtService: JwtService,  // Inject JwtService
-//   ) {}
-
-//   // Sign Up
-//   async signUp(signUpDto: SignUpDto) {
-//     const { email, password, profileImage, ...rest } = signUpDto;
-
-//     // Hash the password
-//     const hashedPassword = await bcrypt.hash(password, 10);
-
-//     let imageUrl = null;
-//     if (profileImage) {
-//       // If there is a profile image, store it
-//       // Generate a unique filename and save the file to your desired location
-//       const fileName = `${Date.now()}-${profileImage.originalname}`;
-//       const uploadPath = path.join(__dirname, '..', '..', 'uploads', fileName);
-
-//       // Save the file (you may use a cloud service instead)
-//       fs.writeFileSync(uploadPath, profileImage.buffer); // For local file saving
-
-//       // Generate the URL or file path to store in the database
-//       imageUrl = `/uploads/${fileName}`; // Local path or URL for your file
-//     }
-
-//     // Create user in the database with the file path (or URL)
-//     const user = await this.prisma.user.create({
-//       data: {
-//         email,
-//         password: hashedPassword,
-//         profileImage: imageUrl, // Store the file path or URL here
-//         ...rest,
-//       },
-//     });
-
-//     return { message: 'User created successfully', user };
-//   }
-
-//   // Login
-//   async login(loginDto: LoginDto) {
-//     const { email, password } = loginDto;
-
-//     // Find user by email
-//     const user = await this.prisma.user.findUnique({ where: { email } });
-
-//     if (!user) {
-//       throw new Error('User not found');
-//     }
-
-//     // Check if password matches
-//     const isPasswordValid = await bcrypt.compare(password, user.password);
-//     if (!isPasswordValid) {
-//       throw new Error('Invalid password');
-//     }
-
-//     // Generate JWT token using JwtService
-//     const payload = { userId: user.id, email: user.email };
-//     const token = this.jwtService.sign(payload, { expiresIn: '1h' });
-
-//     return { message: 'Login successful', token };
-//   }
-// }
-
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { SignUpDto } from './dto/sign-up.dto';
 import { LoginDto } from './dto/login.dto';
+import { JwtService } from '@nestjs/jwt';
+import { Response } from 'express'; // Import Express Response
+import { Utilities } from '../utils/Utilities';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async signUp(signUpDto: SignUpDto) {
-    const { email, password, fullName, phoneNumber, userType, lookingForApply, lookingForRecruit, profileImage } = signUpDto;
+    const {
+      email,
+      password,
+      fullName,
+      phoneNumber,
+      userType,
+      lookingToApply,
+      lookingToRecruit,
+    } = signUpDto;
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -98,25 +39,62 @@ export class AuthService {
         password: hashedPassword,
         fullName,
         phoneNumber,
-        userType,
-        lookingForApply,
-        lookingForRecruit,
-        profileImage, // Store the file path or URL here
+        userType: userType,
+        lookingToApply,
+        lookingToRecruit, // Store the file path or URL here
       },
     });
 
-    return { message: 'User created successfully', user };
+    if (!user) {
+      throw new InternalServerErrorException('Failed to create your account!');
+    }
+
+    return { message: 'Your account has been created successfully!' };
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, res: Response) {
     const { email, password } = loginDto;
 
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) throw new Error('User not found');
+    if (!user)
+      throw new Error('No user was found with the entered credentials');
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) throw new Error('Invalid password');
+    if (!isPasswordValid) throw new Error('Wrong password');
 
-    return { message: 'Login successful', user };
+    // Generate the JWT token
+    const payload = { id: user.id }; // Encode the user ID in the JWT payload
+    const token = this.jwtService.sign(payload);
+
+    // Set the token in the Authorization header
+    res.setHeader('Authorization', `Bearer ${token}`);
+
+    // Send the response
+    return res.status(200).json({
+      message: 'You have successfully logged in!',
+    });
+  }
+
+  async logout(authorizationHeader: string) {
+    // Use the VerifyJWT utility method to validate the token and get the payload
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+
+    if (!decoded) {
+      throw new InternalServerErrorException(
+        'There has been an error on our end',
+      );
+    }
+
+    // Add the token to the Blacklisted_Tokens table
+    const token = authorizationHeader.split(' ')[1];
+    await this.prisma.blacklisted_Tokens.create({
+      data: {
+        blacklistedToken: token,
+      },
+    });
+
+    return {
+      message: 'You have successfully logged out!',
+    };
   }
 }
