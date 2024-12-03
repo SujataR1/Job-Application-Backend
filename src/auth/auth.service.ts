@@ -10,7 +10,6 @@ import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express'; // Import Express Response
 import { Utilities } from '../utils/Utilities';
 import * as bcrypt from 'bcrypt';
-import { error } from 'console';
 
 @Injectable()
 export class AuthService {
