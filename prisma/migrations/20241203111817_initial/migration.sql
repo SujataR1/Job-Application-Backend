@@ -7,6 +7,7 @@ CREATE TABLE `Job` (
     `location` VARCHAR(191) NOT NULL,
     `salary` DOUBLE NULL,
     `postedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -22,6 +23,8 @@ CREATE TABLE `User` (
     `lookingToApply` BOOLEAN NOT NULL,
     `lookingToRecruit` BOOLEAN NOT NULL,
     `profilePicturePath` VARCHAR(191) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `User_email_key`(`email`),
     PRIMARY KEY (`id`)
@@ -30,6 +33,8 @@ CREATE TABLE `User` (
 -- CreateTable
 CREATE TABLE `Blacklisted_Tokens` (
     `blacklistedToken` VARCHAR(191) NOT NULL,
+    `blacklistedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
-    UNIQUE INDEX `Blacklisted_Tokens_blacklistedToken_key`(`blacklistedToken`)
+    UNIQUE INDEX `Blacklisted_Tokens_blacklistedToken_key`(`blacklistedToken`),
+    PRIMARY KEY (`blacklistedToken`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
