@@ -140,7 +140,7 @@ model Application {
   status       ApplicationStatus
   appliedAt    DateTime          @default(now())
   updatedAt    DateTime          @default(now()) @updatedAt
-  Attachments  Attachments[]
+  Attachments  Application_Attachments[]
 }
 
 model OTP {
@@ -224,7 +224,7 @@ model JobProfile {
   updatedAt      DateTime @default(now()) @updatedAt
 }
 
-model Attachments {
+model Application_Attachments {
   id              String      @id @default(uuid())
   applicationId   String
   application     Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
