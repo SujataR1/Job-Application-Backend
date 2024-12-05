@@ -1,5 +1,3 @@
-// This is your Prisma schema file.
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,20 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Job {
-  id          String   @id @default(uuid())
-  title       String
-  company     String
-  description String
-  location    String
-  salary      Float?
-  postedAt    DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
-}
-
 enum UserType {
   Recruiter
   Applicant
+}
+
+enum OTPType {
+  TwoFa
+  PasswordReset
+  EmailVerification
 }
 
 model User {
@@ -40,15 +33,38 @@ model User {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @default(now()) @updatedAt
 
-  otps        OTP[]
-  Companies   Companies? @relation(fields: [companiesId], references: [id])
-  companiesId String?
+
+  otps         OTP[]
+  companies    Companies?    @relation(fields: [companiesId], references: [id])
+  companiesId  String?
+  jobPoster    JobPostings[] @relation("JobPoster")
+  jobApplicant JobPostings[] @relation("JobApplicants")
 }
 
-enum OTPType {
-  TwoFa
-  PasswordReset
-  EmailVerification
+model Companies {
+  id            String        @id @default(uuid())
+  name          String
+  description   String
+  usersInvolved User[] 
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @default(now()) @updatedAt
+  JobPostings   JobPostings[]
+}
+
+model JobPostings {
+  id          String     @id @default(uuid())
+  title       String
+  companyId   String? 
+  company     Companies? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId      String? 
+  applicants  User?      @relation("JobApplicants", fields: [userId], references: [id], onDelete: Cascade)
+  posterId    String? 
+  poster      User?      @relation("JobPoster", fields: [posterId], references: [id], onDelete: Cascade)
+  description String
+  location    String
+  salary      Float?
+  postedAt    DateTime   @default(now())
+  updatedAt   DateTime   @default(now()) @updatedAt
 }
 
 model OTP {
@@ -56,9 +72,8 @@ model OTP {
   otpType   OTPType
   createdAt DateTime @default(now())
   expiry    DateTime
-  userId    String
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String 
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, otpType, expiry])
 }
@@ -66,13 +81,4 @@ model OTP {
 model Blacklisted_Tokens {
   blacklistedToken String   @id @unique
   blacklistedAt    DateTime @default(now())
-}
-
-model Companies {
-  id            String   @id @default(uuid())
-  name          String
-  description   String
-  usersInvolved User[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
 }
