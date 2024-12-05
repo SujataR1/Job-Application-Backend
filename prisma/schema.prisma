@@ -35,7 +35,7 @@ enum NetworkStatusType {
 }
 
 model User {
-  id                         String          @id @default(uuid())
+  id                         String          @id @unique @default(uuid())
   fullName                   String
   about                      String?
   email                      String          @unique
@@ -66,17 +66,21 @@ model User {
   sentMessages               Messages[]      @relation("Sender")
   receivedMessages           Messages[]      @relation("Receiver")
   notifications              Notifications[]
+  jobProfile                 JobProfile? // One-to-one relation with JobProfile
+  settings                   UserSettings? // One-to-one relation with UserSettings
 }
 
 model Companies {
-  id            String        @id @default(uuid())
+  id            String               @id @unique @default(uuid())
   name          String
   description   String
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @default(now()) @updatedAt
-  usersInvolved User[]        @relation("CompanyUsers")
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @default(now()) @updatedAt
+  usersInvolved User[]               @relation("CompanyUsers")
   jobPostings   JobPostings[]
-  pageAdmins    User[]        @relation("CompanyAdmins")
+  pageAdmins    User[]               @relation("CompanyAdmins")
+  analytics     CompanyAnalytics? // One-to-one relation with CompanyAnalytics
+  pageSettings  CompanyPageSettings? // One-to-one relation with CompanyPageSettings
 }
 
 model Messages {
@@ -163,4 +167,57 @@ model Networks {
   status      NetworkStatusType
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @default(now()) @updatedAt
+}
+
+model CompanyAnalytics {
+  id                        String    @id @default(uuid())
+  companyId                 String    @unique
+  company                   Companies @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  totalJobsPosted           Int       @default(0) // Total number of jobs posted by the company
+  totalApplicants           Int       @default(0) // Total number of applicants for all jobs
+  totalHired                Int       @default(0)
+  totalRejected             Int       @default(0)
+  totalUnderCustomAssesment Int       @default(0)
+  totalInterviewsScheduled  Int       @default(0)
+  employees                 Int       @default(0)
+  averageSalary             Float? // Average salary for all job postings
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @default(now()) @updatedAt
+}
+
+model UserSettings {
+  id                         String   @id @default(uuid())
+  userId                     String   @unique
+  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enableTwoFactorAuth        Boolean  @default(false)
+  allowMessagesFromStrangers Boolean  @default(true)
+  privateProfile             Boolean  @default(false)
+  searchableProfile          Boolean  @default(true)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @default(now()) @updatedAt
+}
+
+model CompanyPageSettings {
+  id              String    @id @default(uuid())
+  companyId       String    @unique
+  company         Companies @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  allowJobPosting Boolean   @default(true) // Whether the company allows job postings
+  allowPageEdits  Boolean   @default(true) // Whether page edits are allowed
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+}
+
+model JobProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  headline       String // Profile headline or summary
+  skills         Json // List of skills (array of strings)
+  experience     String? // Work experience (in plain text)
+  education      String? // Educational qualifications (in plain text)
+  certifications Json? // List of certifications (array of strings)
+  languages      Json // List of languages known (array of strings)
+  portfolioLinks Json? // List of portfolio links (array of strings)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
 }
