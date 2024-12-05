@@ -29,6 +29,8 @@ model User {
   id                 String   @id @default(uuid())
   fullName           String
   email              String   @unique
+  emailVerified      Boolean  @default(false)
+  twoFaEnabled       Boolean  @default(false)
   password           String
   phoneNumber        String?
   userType           UserType
@@ -37,9 +39,40 @@ model User {
   profilePicturePath String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @default(now()) @updatedAt
+
+  otps        OTP[]
+  Companies   Companies? @relation(fields: [companiesId], references: [id])
+  companiesId String?
+}
+
+enum OTPType {
+  TwoFa
+  PasswordReset
+  EmailVerification
+}
+
+model OTP {
+  otp       String   @id @unique
+  otpType   OTPType
+  createdAt DateTime @default(now())
+  expiry    DateTime
+  userId    String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, otpType, expiry])
 }
 
 model Blacklisted_Tokens {
   blacklistedToken String   @id @unique
   blacklistedAt    DateTime @default(now())
+}
+
+model Companies {
+  id            String   @id @default(uuid())
+  name          String
+  description   String
+  usersInvolved User[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
 }
