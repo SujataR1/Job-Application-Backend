@@ -68,6 +68,7 @@ model User {
   notifications              Notifications[]
   jobProfile                 JobProfile? // One-to-one relation with JobProfile
   settings                   UserSettings? // One-to-one relation with UserSettings
+  Posts                      Posts[]
 }
 
 model Companies {
@@ -132,14 +133,14 @@ model JobPostings {
 }
 
 model Application {
-  id           String            @id @default(uuid())
+  id           String                    @id @default(uuid())
   userId       String
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   jobPostingId String
-  jobPosting   JobPostings       @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  jobPosting   JobPostings               @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
   status       ApplicationStatus
-  appliedAt    DateTime          @default(now())
-  updatedAt    DateTime          @default(now()) @updatedAt
+  appliedAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @default(now()) @updatedAt
   Attachments  Application_Attachments[]
 }
 
@@ -231,4 +232,33 @@ model Application_Attachments {
   attachmentPaths Json // JSON field to store paths for multiple attachments
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @default(now()) @updatedAt
+}
+
+enum PostVisibilityEnum {
+  Everyone
+  Connections
+  OnlyMe
+}
+
+model Posts {
+  id         String             @id @default(uuid())
+  userId     String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String // Title of the post
+  content    String? // Optional content of the post
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @default(now()) @updatedAt
+  visibility PostVisibilityEnum
+
+  // Relation to Post_Attachment
+  attachments Post_Attachments[]
+}
+
+model Post_Attachments {
+  id             String   @id @default(uuid())
+  postId         String
+  post           Posts    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  attachmentPath Json // Path to the attached file
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
 }
