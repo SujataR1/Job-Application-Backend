@@ -66,8 +66,8 @@ model User {
   sentMessages               Messages[]      @relation("Sender")
   receivedMessages           Messages[]      @relation("Receiver")
   notifications              Notifications[]
-  jobProfile                 JobProfile? // One-to-one relation with JobProfile
-  settings                   UserSettings? // One-to-one relation with UserSettings
+  jobProfile                 JobProfile?
+  settings                   UserSettings?
   Posts                      Posts[]
 }
 
@@ -80,8 +80,8 @@ model Companies {
   usersInvolved User[]               @relation("CompanyUsers")
   jobPostings   JobPostings[]
   pageAdmins    User[]               @relation("CompanyAdmins")
-  analytics     CompanyAnalytics? // One-to-one relation with CompanyAnalytics
-  pageSettings  CompanyPageSettings? // One-to-one relation with CompanyPageSettings
+  analytics     CompanyAnalytics?
+  pageSettings  CompanyPageSettings?
 }
 
 model Messages {
@@ -175,14 +175,14 @@ model CompanyAnalytics {
   id                        String    @id @default(uuid())
   companyId                 String    @unique
   company                   Companies @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  totalJobsPosted           Int       @default(0) // Total number of jobs posted by the company
-  totalApplicants           Int       @default(0) // Total number of applicants for all jobs
+  totalJobsPosted           Int       @default(0)
+  totalApplicants           Int       @default(0)
   totalHired                Int       @default(0)
   totalRejected             Int       @default(0)
   totalUnderCustomAssesment Int       @default(0)
   totalInterviewsScheduled  Int       @default(0)
   employees                 Int       @default(0)
-  averageSalary             Float? // Average salary for all job postings
+  averageSalary             Float?
   createdAt                 DateTime  @default(now())
   updatedAt                 DateTime  @default(now()) @updatedAt
 }
@@ -203,8 +203,8 @@ model CompanyPageSettings {
   id              String    @id @default(uuid())
   companyId       String    @unique
   company         Companies @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  allowJobPosting Boolean   @default(true) // Whether the company allows job postings
-  allowPageEdits  Boolean   @default(true) // Whether page edits are allowed
+  allowJobPosting Boolean   @default(true)
+  allowPageEdits  Boolean   @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @default(now()) @updatedAt
 }
@@ -213,14 +213,14 @@ model JobProfile {
   id             String   @id @default(uuid())
   userId         String   @unique
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  headline       String // Profile headline or summary
-  skills         Json // List of skills (array of strings)
+  headline       String
+  skills         Json
   isAFresher     Boolean  @default(false)
-  experience     Json? // Work experience (in plain text)
-  education      Json // Educational qualifications (in plain text)
-  certifications Json? // List of certifications (array of strings)
-  languages      Json // List of languages known (array of strings)
-  portfolioLinks Json? // List of portfolio links (array of strings)
+  experience     Json?
+  education      Json
+  certifications Json?
+  languages      Json
+  portfolioLinks Json?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
 }
@@ -229,7 +229,7 @@ model Application_Attachments {
   id              String      @id @default(uuid())
   applicationId   String
   application     Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  attachmentPaths Json // JSON field to store paths for multiple attachments
+  attachmentPaths Json
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @default(now()) @updatedAt
 }
@@ -244,13 +244,12 @@ model Posts {
   id         String             @id @default(uuid())
   userId     String
   user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title      String // Title of the post
-  content    String? // Optional content of the post
+  title      String
+  content    String?
   createdAt  DateTime           @default(now())
   updatedAt  DateTime           @default(now()) @updatedAt
   visibility PostVisibilityEnum
 
-  // Relation to Post_Attachment
   attachments Post_Attachments[]
 }
 
