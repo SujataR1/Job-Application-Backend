@@ -35,49 +35,45 @@ enum NetworkStatusType {
 }
 
 model User {
-  id                         String   @id @default(uuid())
+  id                         String          @id @default(uuid())
   fullName                   String
   about                      String?
-  email                      String   @unique
-  emailVerified              Boolean  @default(false)
-  twoFaEnabled               Boolean  @default(false)
+  email                      String          @unique
+  emailVerified              Boolean         @default(false)
+  twoFaEnabled               Boolean         @default(false)
   password                   String
   phoneNumber                String?
   userType                   UserType
   lookingToApply             Boolean
   lookingToRecruit           Boolean
   profilePicturePath         String?
-  createdAt                  DateTime @default(now())
-  updatedAt                  DateTime @default(now()) @updatedAt
-  privateProfile             Boolean  @default(false)
-  searchableProfile          Boolean  @default(true)
-  allowMessagesfromStrangers Boolean  @default(true)
-  companyPageWriteAccess     Boolean  @default(false)
-
-  // Relations
-  otps             OTP[]
-  company          Companies?      @relation("CompanyUsers", fields: [companyId], references: [id])
-  companyId        String?
-  companyPageAdmin Companies[]     @relation("CompanyAdmins")
-  jobPoster        JobPostings[]   @relation("JobPoster")
-  applications     Application[]
-  friendsInitiator Networks[]      @relation("FriendsInitiator")
-  friendsReceiver  Networks[]      @relation("FriendsReceiver")
-  blockedUsers     UserBlockList[] @relation("BlockedUsersFor")
-  blockedByUsers   UserBlockList[] @relation("BlockedUsersBy")
-  sentMessages     Messages[]      @relation("Sender")
-  receivedMessages Messages[]      @relation("Receiver")
-  notifications    Notifications[]
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @default(now()) @updatedAt
+  privateProfile             Boolean         @default(false)
+  searchableProfile          Boolean         @default(true)
+  allowMessagesfromStrangers Boolean         @default(true)
+  companyPageWriteAccess     Boolean         @default(false)
+  otps                       OTP[]
+  company                    Companies?      @relation("CompanyUsers", fields: [companyId], references: [id])
+  companyId                  String?
+  companyPageAdmin           Companies[]     @relation("CompanyAdmins")
+  jobPoster                  JobPostings[]   @relation("JobPoster")
+  applications               Application[]
+  friendsInitiator           Networks[]      @relation("FriendsInitiator")
+  friendsReceiver            Networks[]      @relation("FriendsReceiver")
+  blockedUsers               UserBlockList[] @relation("BlockedUsersFor")
+  blockedByUsers             UserBlockList[] @relation("BlockedUsersBy")
+  sentMessages               Messages[]      @relation("Sender")
+  receivedMessages           Messages[]      @relation("Receiver")
+  notifications              Notifications[]
 }
 
 model Companies {
-  id          String   @id @default(uuid())
-  name        String
-  description String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
-
-  // Relations
+  id            String        @id @default(uuid())
+  name          String
+  description   String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @default(now()) @updatedAt
   usersInvolved User[]        @relation("CompanyUsers")
   jobPostings   JobPostings[]
   pageAdmins    User[]        @relation("CompanyAdmins")
