@@ -1,5 +1,3 @@
-// This is your Prisma schema file.
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,37 +7,257 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Job {
-  id          String   @id @default(uuid())
-  title       String
-  company     String
-  description String
-  location    String
-  salary      Float?
-  postedAt    DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
-}
-
 enum UserType {
   Recruiter
   Applicant
 }
 
+enum ApplicationStatus {
+  Pending
+  Accepted
+  Rejected
+  Withdrawn
+  UnderCustomAssessment
+  InterviewScheduled
+}
+
+enum OTPType {
+  TwoFa
+  PasswordReset
+  EmailVerification
+}
+
+enum NetworkStatusType {
+  Pending
+  Accepted
+  Rejected
+  Blocked
+}
+
 model User {
-  id                 String   @id @default(uuid())
-  fullName           String
-  email              String   @unique
-  password           String
-  phoneNumber        String?
-  userType           UserType
-  lookingToApply     Boolean
-  lookingToRecruit   Boolean
-  profilePicturePath String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @default(now()) @updatedAt
+  id                         String          @id @unique @default(uuid())
+  fullName                   String
+  about                      String?
+  email                      String          @unique
+  emailVerified              Boolean         @default(false)
+  twoFaEnabled               Boolean         @default(false)
+  password                   String
+  phoneNumber                String?
+  userType                   UserType
+  lookingToApply             Boolean
+  lookingToRecruit           Boolean
+  profilePicturePath         String?
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @default(now()) @updatedAt
+  privateProfile             Boolean         @default(false)
+  searchableProfile          Boolean         @default(true)
+  allowMessagesfromStrangers Boolean         @default(true)
+  companyPageWriteAccess     Boolean         @default(false)
+  otps                       OTP[]
+  company                    Companies?      @relation("CompanyUsers", fields: [companyId], references: [id])
+  companyId                  String?
+  companyPageAdmin           Companies[]     @relation("CompanyAdmins")
+  jobPoster                  JobPostings[]   @relation("JobPoster")
+  applications               Application[]
+  friendsInitiator           Networks[]      @relation("FriendsInitiator")
+  friendsReceiver            Networks[]      @relation("FriendsReceiver")
+  blockedUsers               UserBlockList[] @relation("BlockedUsersFor")
+  blockedByUsers             UserBlockList[] @relation("BlockedUsersBy")
+  sentMessages               Messages[]      @relation("Sender")
+  receivedMessages           Messages[]      @relation("Receiver")
+  notifications              Notifications[]
+  jobProfile                 JobProfile?
+  settings                   UserSettings?
+  Posts                      Posts[]
+}
+
+model Companies {
+  id            String               @id @unique @default(uuid())
+  name          String
+  description   String
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @default(now()) @updatedAt
+  usersInvolved User[]               @relation("CompanyUsers")
+  jobPostings   JobPostings[]
+  pageAdmins    User[]               @relation("CompanyAdmins")
+  analytics     CompanyAnalytics?
+  pageSettings  CompanyPageSettings?
+}
+
+model Messages {
+  id         String   @id @default(uuid())
+  senderId   String
+  sender     User     @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+}
+
+model Notifications {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model UserBlockList {
+  id            String   @id @default(uuid())
+  userForId     String
+  userFor       User     @relation("BlockedUsersFor", fields: [userForId], references: [id], onDelete: Cascade)
+  userBlockedId String
+  userBlocked   User     @relation("BlockedUsersBy", fields: [userBlockedId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+}
+
+model JobPostings {
+  id          String     @id @default(uuid())
+  title       String
+  description String
+  location    String
+  salary      Float?
+  companyId   String?
+  company     Companies? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  posterId    String?
+  poster      User?      @relation("JobPoster", fields: [posterId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @default(now()) @updatedAt
+
+  applications Application[]
+}
+
+model Application {
+  id           String                    @id @default(uuid())
+  userId       String
+  user         User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobPostingId String
+  jobPosting   JobPostings               @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  status       ApplicationStatus
+  appliedAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @default(now()) @updatedAt
+  Attachments  Application_Attachments[]
+}
+
+model OTP {
+  otp       String   @id @unique
+  otpType   OTPType
+  createdAt DateTime @default(now())
+  expiry    DateTime
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, otpType, expiry])
 }
 
 model Blacklisted_Tokens {
   blacklistedToken String   @id @unique
   blacklistedAt    DateTime @default(now())
+}
+
+model Networks {
+  id          String            @id @default(uuid())
+  requesterId String
+  requester   User              @relation("FriendsInitiator", fields: [requesterId], references: [id], onDelete: Cascade)
+  receiverId  String
+  receiver    User              @relation("FriendsReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  status      NetworkStatusType
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @default(now()) @updatedAt
+}
+
+model CompanyAnalytics {
+  id                        String    @id @default(uuid())
+  companyId                 String    @unique
+  company                   Companies @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  totalJobsPosted           Int       @default(0)
+  totalApplicants           Int       @default(0)
+  totalHired                Int       @default(0)
+  totalRejected             Int       @default(0)
+  totalUnderCustomAssesment Int       @default(0)
+  totalInterviewsScheduled  Int       @default(0)
+  employees                 Int       @default(0)
+  averageSalary             Float?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @default(now()) @updatedAt
+}
+
+model UserSettings {
+  id                         String   @id @default(uuid())
+  userId                     String   @unique
+  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enableTwoFactorAuth        Boolean  @default(false)
+  allowMessagesFromStrangers Boolean  @default(true)
+  privateProfile             Boolean  @default(false)
+  searchableProfile          Boolean  @default(true)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @default(now()) @updatedAt
+}
+
+model CompanyPageSettings {
+  id              String    @id @default(uuid())
+  companyId       String    @unique
+  company         Companies @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  allowJobPosting Boolean   @default(true)
+  allowPageEdits  Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+}
+
+model JobProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  headline       String
+  skills         Json
+  isAFresher     Boolean  @default(false)
+  experience     Json?
+  education      Json
+  certifications Json?
+  languages      Json
+  portfolioLinks Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+}
+
+model Application_Attachments {
+  id              String      @id @default(uuid())
+  applicationId   String
+  application     Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  attachmentPaths Json
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @default(now()) @updatedAt
+}
+
+enum PostVisibilityEnum {
+  Everyone
+  Connections
+  OnlyMe
+}
+
+model Posts {
+  id         String             @id @default(uuid())
+  userId     String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  content    String?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @default(now()) @updatedAt
+  visibility PostVisibilityEnum
+
+  attachments Post_Attachments[]
+}
+
+model Post_Attachments {
+  id             String   @id @default(uuid())
+  postId         String
+  post           Posts    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  attachmentPath Json // Path to the attached file
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
 }
