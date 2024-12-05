@@ -12,6 +12,28 @@ enum UserType {
   Applicant
 }
 
+enum ApplicationStatus {
+  Pending
+  Accepted
+  Rejected
+  Withdrawn
+  UnderCustomAssessment
+  InterviewScheduled
+}
+
+enum OTPType {
+  TwoFa
+  PasswordReset
+  EmailVerification
+}
+
+enum NetworkStatusType {
+  Pending
+  Accepted
+  Rejected
+  Blocked
+}
+
 model User {
   id                         String   @id @default(uuid())
   fullName                   String
@@ -30,19 +52,35 @@ model User {
   privateProfile             Boolean  @default(false)
   searchableProfile          Boolean  @default(true)
   allowMessagesfromStrangers Boolean  @default(true)
+  companyPageWriteAccess     Boolean  @default(false)
 
+  // Relations
   otps             OTP[]
-  companies        Companies?      @relation(fields: [companiesId], references: [id])
-  companiesId      String?
+  company          Companies?      @relation("CompanyUsers", fields: [companyId], references: [id])
+  companyId        String?
+  companyPageAdmin Companies[]     @relation("CompanyAdmins")
   jobPoster        JobPostings[]   @relation("JobPoster")
   applications     Application[]
   friendsInitiator Networks[]      @relation("FriendsInitiator")
-  friendsReciever  Networks[]      @relation("FriendsReceiver")
+  friendsReceiver  Networks[]      @relation("FriendsReceiver")
   blockedUsers     UserBlockList[] @relation("BlockedUsersFor")
   blockedByUsers   UserBlockList[] @relation("BlockedUsersBy")
   sentMessages     Messages[]      @relation("Sender")
   receivedMessages Messages[]      @relation("Receiver")
   notifications    Notifications[]
+}
+
+model Companies {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  // Relations
+  usersInvolved User[]        @relation("CompanyUsers")
+  jobPostings   JobPostings[]
+  pageAdmins    User[]        @relation("CompanyAdmins")
 }
 
 model Messages {
@@ -51,19 +89,19 @@ model Messages {
   sender     User     @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
   receiverId String
   receiver   User     @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  content    String // Message content
-  isRead     Boolean  @default(false) // Whether the message has been read
+  content    String
+  isRead     Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
 }
 
 model Notifications {
   id        String   @id @default(uuid())
-  userId    String // User receiving the notification
+  userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
-  content   String // Content of the notification
-  isRead    Boolean  @default(false) // Whether the notification has been read
+  content   String
+  isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 }
@@ -77,57 +115,31 @@ model UserBlockList {
   createdAt     DateTime @default(now())
 }
 
-model Companies {
-  id            String        @id @default(uuid())
-  name          String
-  description   String
-  usersInvolved User[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @default(now()) @updatedAt
-  JobPostings   JobPostings[]
-}
-
 model JobPostings {
   id          String     @id @default(uuid())
   title       String
-  companyId   String?
-  company     Companies? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  userId      String?
-  posterId    String?
-  poster      User?      @relation("JobPoster", fields: [posterId], references: [id], onDelete: Cascade)
   description String
   location    String
   salary      Float?
-  postedAt    DateTime   @default(now())
+  companyId   String?
+  company     Companies? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  posterId    String?
+  poster      User?      @relation("JobPoster", fields: [posterId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
   updatedAt   DateTime   @default(now()) @updatedAt
 
   applications Application[]
 }
 
-enum ApplicationStatus {
-  Pending
-  Accepted
-  Rejected
-  Withdrawn
-  UnderCustomAssesment
-  InterviewScheduled
-}
-
 model Application {
   id           String            @id @default(uuid())
-  userId       String // User applying for the job
+  userId       String
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  jobPostingId String // Job posting being applied to
+  jobPostingId String
   jobPosting   JobPostings       @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
-  status       ApplicationStatus // Status of the application (e.g., Pending, Accepted)
-  appliedAt    DateTime          @default(now()) // When the application was submitted
+  status       ApplicationStatus
+  appliedAt    DateTime          @default(now())
   updatedAt    DateTime          @default(now()) @updatedAt
-}
-
-enum OTPType {
-  TwoFa
-  PasswordReset
-  EmailVerification
 }
 
 model OTP {
@@ -146,20 +158,13 @@ model Blacklisted_Tokens {
   blacklistedAt    DateTime @default(now())
 }
 
-enum NetworkStatusType {
-  Pending
-  Accepted
-  Rejected
-  Blocked
-}
-
 model Networks {
   id          String            @id @default(uuid())
-  requesterId String // The user who initiated the friendship
+  requesterId String
   requester   User              @relation("FriendsInitiator", fields: [requesterId], references: [id], onDelete: Cascade)
-  receiverId  String // The user who received the friendship request
+  receiverId  String
   receiver    User              @relation("FriendsReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  status      NetworkStatusType // Friendship status (e.g., pending, accepted, blocked)
+  status      NetworkStatusType
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @default(now()) @updatedAt
 }
