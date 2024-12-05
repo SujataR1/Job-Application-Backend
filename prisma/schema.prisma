@@ -12,12 +12,6 @@ enum UserType {
   Applicant
 }
 
-enum OTPType {
-  TwoFa
-  PasswordReset
-  EmailVerification
-}
-
 model User {
   id                 String   @id @default(uuid())
   fullName           String
@@ -65,6 +59,12 @@ model JobPostings {
   salary      Float?
   postedAt    DateTime   @default(now())
   updatedAt   DateTime   @default(now()) @updatedAt
+}
+
+enum OTPType {
+  TwoFa
+  PasswordReset
+  EmailVerification
 }
 
 model OTP {
