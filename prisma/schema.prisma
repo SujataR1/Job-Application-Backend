@@ -140,6 +140,7 @@ model Application {
   status       ApplicationStatus
   appliedAt    DateTime          @default(now())
   updatedAt    DateTime          @default(now()) @updatedAt
+  Attachments  Attachments[]
 }
 
 model OTP {
@@ -213,11 +214,21 @@ model JobProfile {
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   headline       String // Profile headline or summary
   skills         Json // List of skills (array of strings)
-  experience     String? // Work experience (in plain text)
-  education      String? // Educational qualifications (in plain text)
+  isAFresher     Boolean  @default(false)
+  experience     Json? // Work experience (in plain text)
+  education      Json // Educational qualifications (in plain text)
   certifications Json? // List of certifications (array of strings)
   languages      Json // List of languages known (array of strings)
   portfolioLinks Json? // List of portfolio links (array of strings)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
+}
+
+model Attachments {
+  id              String      @id @default(uuid())
+  applicationId   String
+  application     Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  attachmentPaths Json // JSON field to store paths for multiple attachments
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @default(now()) @updatedAt
 }
