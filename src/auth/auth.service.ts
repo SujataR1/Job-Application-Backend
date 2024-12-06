@@ -27,6 +27,7 @@ export class AuthService {
       lookingToApply,
       lookingToRecruit,
       about,
+      profileImage,
     } = signUpDto;
 
     // Hash the password
