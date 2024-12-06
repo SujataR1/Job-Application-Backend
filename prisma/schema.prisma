@@ -42,7 +42,7 @@ model User {
   emailVerified              Boolean         @default(false)
   twoFaEnabled               Boolean         @default(false)
   password                   String
-  phoneNumber                String?
+  phoneNumber                String?         @unique
   userType                   UserType
   lookingToApply             Boolean
   lookingToRecruit           Boolean

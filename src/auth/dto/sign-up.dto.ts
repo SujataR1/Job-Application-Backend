@@ -47,7 +47,8 @@ export class SignUpDto {
   userType: UserType;
 
   @ApiProperty({
-    description: "Description of the user"})
+    description: 'Description of the user',
+  })
   @IsOptional()
   @IsNotEmpty()
   about: string;

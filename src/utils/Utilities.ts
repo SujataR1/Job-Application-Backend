@@ -1,5 +1,8 @@
+import { diskStorage } from 'multer';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClient } from '@prisma/client'; // Import Prisma Client
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   UnauthorizedException,
   NotFoundException,
@@ -62,5 +65,92 @@ export class Utilities {
         'Either your session has expired or there is an issue on our end. Please try logging in again.',
       );
     }
+  }
+
+  /**
+   * Ensures a directory exists or creates it recursively if it doesn't.
+   * @param directoryPath - The path of the directory to check or create
+   */
+  static ensureDirectoryExists(directoryPath: string): void {
+    const resolvedPath = path.resolve(directoryPath);
+    if (!fs.existsSync(resolvedPath)) {
+      fs.mkdirSync(resolvedPath, { recursive: true }); // Recursively create the directory
+    }
+  }
+
+  /**
+   * Deletes a file if it exists.
+   * @param filePath - The path of the file to delete
+   */
+  static deleteFileIfExists(filePath: string): void {
+    const resolvedPath = path.resolve(filePath);
+    if (fs.existsSync(resolvedPath)) {
+      fs.unlinkSync(resolvedPath);
+    }
+  }
+
+  /**
+   * Generates a unique file name based on the original file name and current timestamp.
+   * @param originalFileName - The original name of the uploaded file
+   * @returns A unique file name
+   */
+  static generateUniqueFileName(originalFileName: string): string {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const ext = path.extname(originalFileName);
+    const baseName = path.basename(originalFileName, ext);
+    return `${baseName}-${uniqueSuffix}${ext}`;
+  }
+
+  /**
+   * Validates the MIME type of an uploaded file.
+   * @param file - The uploaded file
+   * @param allowedTypes - Array of allowed MIME types
+   * @throws UnauthorizedException if the file type is not allowed
+   */
+  static validateFileType(
+    file: Express.Multer.File,
+    allowedTypes: string[],
+  ): void {
+    if (!allowedTypes.includes(file.mimetype)) {
+      throw new UnauthorizedException('Unsupported file type');
+    }
+  }
+
+  /**
+   * Factory function for configuring Multer dynamically based on the destination folder.
+   * @param folder - The destination folder for uploads
+   * @returns Multer configuration object
+   */
+  static multerSetup(folder: string) {
+    return {
+      storage: diskStorage({
+        destination: (req, file, callback) => {
+          const uploadPath = `./Media/${folder}`;
+          Utilities.ensureDirectoryExists(uploadPath); // Ensure the directory exists
+          callback(null, uploadPath);
+        },
+        filename: (req, file, callback) => {
+          const uniqueName = Utilities.generateUniqueFileName(
+            file.originalname,
+          );
+          callback(null, uniqueName); // Generate a unique filename
+        },
+      }),
+      fileFilter: (req, file, callback) => {
+        try {
+          Utilities.validateFileType(file, [
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+          ]); // Validate MIME type
+          callback(null, true);
+        } catch (error) {
+          callback(error, false); // Reject unsupported file types
+        }
+      },
+      limits: {
+        fileSize: 5000 * 1024, // 500 KB file size limit
+      },
+    };
   }
 }
