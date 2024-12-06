@@ -20,6 +20,7 @@ import {
   ApiConsumes,
   ApiBody,
 } from '@nestjs/swagger';
+import { Utilities } from '../utils/utilities';
 
 @ApiTags('Authentication') // Swagger tag for grouping
 @Controller('auth')
@@ -33,7 +34,9 @@ export class AuthController {
     description:
       'This endpoint allows a user to sign up by providing personal details and an optional profile image.',
   })
-  @UseInterceptors(FileInterceptor('profileImage')) // Interceptor for file handling
+  @UseInterceptors(
+    FileInterceptor('profileImage', Utilities.multerSetup('Users')),
+  ) // Interceptor for file handling
   @ApiConsumes('multipart/form-data') // Swagger annotation for handling file uploads
   @ApiBody({
     description: 'Sign-up form data with optional profile image',
@@ -52,7 +55,7 @@ export class AuthController {
     @UploadedFile() profileImage: Express.Multer.File, // Correct type for uploaded file
   ) {
     if (profileImage) {
-      signUpDto.profileImage = profileImage.filename; // Save filename or path to DTO
+      signUpDto.profileImage = profileImage.path; // Save filename or path to DTO
     }
 
     return this.authService.signUp(signUpDto); // Process the sign-up logic
