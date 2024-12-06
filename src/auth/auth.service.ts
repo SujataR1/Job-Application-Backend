@@ -2,6 +2,8 @@ import {
   Injectable,
   InternalServerErrorException,
   ConflictException,
+  NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { SignUpDto } from './dto/sign-up.dto';
@@ -74,30 +76,40 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new InternalServerErrorException('Failed to create your account!');
+      throw new InternalServerErrorException(
+        'Failed to create your account! This might be some issue on our end. Please sit tight while we try to fix it',
+      );
     }
 
-    return { message: 'Your account has been created successfully!', user };
+    return { message: 'Your account has been created successfully!' };
   }
 
   async login(loginDto: LoginDto, res: Response) {
     const { email, password } = loginDto;
 
+    // Fetch user by email
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user)
-      throw new Error(
+    if (!user) {
+      throw new NotFoundException(
         'We seem to have no record with the entered credentials. Please signup first.',
       );
+    }
 
+    // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) throw new Error('Wrong password');
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Please check the entered credentials');
+    }
 
     // Generate the JWT token
     const payload = { id: user.id }; // Encode the user ID in the JWT payload
     const token = this.jwtService.sign(payload);
 
-    // Set the token in the Authorization header
-    res.setHeader('Authorization', `Bearer ${token}`);
+    // Encrypt the token
+    const encryptedToken = Utilities.encryptToken(token);
+
+    // Set the encrypted token in the Authorization header
+    res.setHeader('Authorization', `Bearer ${encryptedToken}`);
 
     // Send the response
     return res.status(200).json({
