@@ -9,7 +9,7 @@ import { PrismaService } from 'prisma/prisma.service';
 import { SignUpDto } from './dto/sign-up.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
-import { Response } from 'express'; // Import Express Response
+import { Response } from 'express';
 import { Utilities } from '../utils/Utilities';
 import * as bcrypt from 'bcrypt';
 
