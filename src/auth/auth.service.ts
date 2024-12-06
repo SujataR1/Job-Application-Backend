@@ -81,7 +81,7 @@ export class AuthService {
       );
     }
 
-    return { message: 'Your account has been created successfully!', user };
+    return { message: 'Your account has been created successfully!' };
   }
 
   async login(loginDto: LoginDto, res: Response) {
