@@ -58,7 +58,7 @@ export class AuthService {
       }
     }
 
-    // Hash the password
+    // Hash the password before storing it
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create the user in the database
