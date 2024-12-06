@@ -42,7 +42,7 @@ model User {
   emailVerified              Boolean         @default(false)
   twoFaEnabled               Boolean         @default(false)
   password                   String
-  phoneNumber                String?
+  phoneNumber                String?         @unique
   userType                   UserType
   lookingToApply             Boolean
   lookingToRecruit           Boolean
@@ -165,7 +165,7 @@ model Currently_In_Use_Tokens {
 }
 
 model Blacklisted_Tokens {
-  blacklistedToken String   @id @unique
+  blacklistedToken String   @id @unique @db.VarChar(512)
   blacklistedAt    DateTime @default(now())
 }
 
