@@ -1,6 +1,8 @@
 import {
   Controller,
   Post,
+  Patch,
+  Delete,
   Res,
   Body,
   Headers,
@@ -10,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/sign-up.dto';
+import { UpdateUserDto } from './dto/update.dto'; // Import Update DTO
 import { FileInterceptor } from '@nestjs/platform-express';
 import { LoginDto } from './dto/login.dto'; // Import LoginDto
 import { Response } from 'express';
@@ -19,6 +22,7 @@ import {
   ApiResponse,
   ApiConsumes,
   ApiBody,
+  ApiHeader,
 } from '@nestjs/swagger';
 import { Utilities } from '../utils/utilities';
 
@@ -84,6 +88,7 @@ export class AuthController {
     return this.authService.login(loginDto, res);
   }
 
+  // Logout endpoint
   @Post('logout')
   @ApiOperation({
     summary: 'Logout User',
@@ -98,11 +103,103 @@ export class AuthController {
     status: 401,
     description: 'Unauthorized - Invalid, expired, or blacklisted token.',
   })
-  async logout(@Headers('Authorization') authorizationHeader: string) {
+  async logout(@Headers('authorization') authorizationHeader: string) {
     try {
       return await this.authService.logout(authorizationHeader);
     } catch (error) {
       throw new UnauthorizedException(error.message);
     }
+  }
+
+  // Update User endpoint
+  @Patch('update')
+  @ApiOperation({
+    summary: 'Update user information',
+    description: 'Updates the user information, except passwords.',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer token for authentication',
+  })
+  @ApiBody({
+    description: 'Fields to update (excluding password)',
+    type: UpdateUserDto, // Specify the DTO explicitly for Swagger
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User information updated successfully.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation error or bad input.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid token or authentication failed.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  async updateUser(
+    @Headers('authorization') authorizationHeader: string,
+
+    @Body() updateUserDto: UpdateUserDto, // DTO for fields to update
+  ) {
+    return this.authService.updateUser(authorizationHeader, updateUserDto);
+  }
+
+  // Delete User endpoint
+  @Delete('delete')
+  @ApiOperation({
+    summary: 'Delete user account',
+    description:
+      'Deletes the account of a logged on the event of a succesful password verification.',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer token for authentication',
+  })
+  @ApiBody({
+    description: 'User password for confirmation',
+    schema: {
+      type: 'object',
+      properties: {
+        password: {
+          type: 'string',
+          example: 'userPassword123',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User deleted successfully.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation error or bad input.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid token or incorrect password.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  async deleteUser(
+    @Headers('Authorization') authorizationHeader: string,
+    @Body('password') password: string, // Password confirmation
+  ) {
+    return this.authService.deleteUser(authorizationHeader, password);
   }
 }
