@@ -86,7 +86,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user)
       throw new Error(
-        'We seem to have npo record with the entered credentials. Please signup first.',
+        'We seem to have no record with the entered credentials. Please signup first.',
       );
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
