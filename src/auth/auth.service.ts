@@ -12,7 +12,6 @@ import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express'; // Import Express Response
 import { Utilities } from '../utils/Utilities';
 import * as bcrypt from 'bcrypt';
-import { NotFoundError } from 'rxjs';
 
 @Injectable()
 export class AuthService {
