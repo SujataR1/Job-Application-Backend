@@ -46,6 +46,12 @@ export class SignUpDto {
   @IsNotEmpty()
   userType: UserType;
 
+  @ApiProperty({
+    description: "Description of the user"})
+  @IsOptional()
+  @IsNotEmpty()
+  about: string;
+
   @ApiPropertyOptional({
     description: 'Whether the user is looking to apply for jobs',
     example: false,

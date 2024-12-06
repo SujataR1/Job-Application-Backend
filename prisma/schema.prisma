@@ -117,17 +117,21 @@ model UserBlockList {
 }
 
 model JobPostings {
-  id          String     @id @default(uuid())
-  title       String
-  description String
-  location    String
-  salary      Float?
-  companyId   String?
-  company     Companies? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  posterId    String?
-  poster      User?      @relation("JobPoster", fields: [posterId], references: [id], onDelete: Cascade)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @default(now()) @updatedAt
+  id             String     @id @default(uuid())
+  title          String
+  description    String
+  locations      Json
+  skills         Json
+  min_experience Float      @default(0.0)
+  max_experience Float?
+  min_salary     Float?
+  max_salary     Float?
+  companyId      String?
+  company        Companies? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  posterId       String?
+  poster         User?      @relation("JobPoster", fields: [posterId], references: [id], onDelete: Cascade)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @default(now()) @updatedAt
 
   applications Application[]
 }
