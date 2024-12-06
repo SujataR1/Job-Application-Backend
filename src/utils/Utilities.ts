@@ -73,16 +73,6 @@ export class Utilities {
       );
     }
 
-    // Decrypt the token
-    let decryptedToken: string;
-    try {
-      decryptedToken = Utilities.decryptToken(encryptedToken); // Decrypt the token
-    } catch (error) {
-      throw new UnauthorizedException(
-        'Invalid or corrupted token. Please log in again.',
-      );
-    }
-
     // Check if the token is blacklisted
     const isBlacklisted = await this.prisma.blacklisted_Tokens.findUnique({
       where: { blacklistedToken: encryptedToken }, // Check the original encrypted token
@@ -91,6 +81,16 @@ export class Utilities {
     if (isBlacklisted) {
       throw new UnauthorizedException(
         'Your session has expired. Please log in again.',
+      );
+    }
+
+    // Decrypt the token
+    let decryptedToken: string;
+    try {
+      decryptedToken = Utilities.decryptToken(encryptedToken); // Decrypt the token
+    } catch (error) {
+      throw new UnauthorizedException(
+        'Invalid or corrupted token. Please log in again.',
       );
     }
 
