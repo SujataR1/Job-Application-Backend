@@ -2,6 +2,7 @@ import {
   Injectable,
   InternalServerErrorException,
   ConflictException,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { SignUpDto } from './dto/sign-up.dto';
@@ -10,6 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express'; // Import Express Response
 import { Utilities } from '../utils/Utilities';
 import * as bcrypt from 'bcrypt';
+import { NotFoundError } from 'rxjs';
 
 @Injectable()
 export class AuthService {
@@ -74,7 +76,9 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new InternalServerErrorException('Failed to create your account!');
+      throw new InternalServerErrorException(
+        'Failed to create your account! This might be some issue on our end. Please sit tight while we try to fix it',
+      );
     }
 
     return { message: 'Your account has been created successfully!', user };
@@ -85,7 +89,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user)
-      throw new Error(
+      throw new NotFoundException(
         'We seem to have no record with the entered credentials. Please signup first.',
       );
 
