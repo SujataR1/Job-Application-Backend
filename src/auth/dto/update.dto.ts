@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNotEmpty } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -39,7 +39,11 @@ export class UpdateUserDto {
     description: 'Whether the user is looking to apply for jobs',
     example: true,
   })
-  @Transform(({ value }) => value === 'true' || value === true) // Transform string 'true' to boolean true
+  @Transform(({ value }) => {
+    if (value === 'true') return true; // Convert "true" string to true
+    if (value === 'false') return false; // Convert "false" string to false
+    return value; // Leave actual booleans untouched
+  })
   @IsBoolean()
   @IsOptional()
   lookingToApply?: boolean;
@@ -48,16 +52,22 @@ export class UpdateUserDto {
     description: 'Whether the user is looking to recruit candidates',
     example: false,
   })
-  @Transform(({ value }) => value === 'true' || value === true) // Transform string 'true' to boolean true
+  @Transform(({ value }) => {
+    if (value === 'true') return true; // Convert "true" string to true
+    if (value === 'false') return false; // Convert "false" string to false
+    return value; // Leave actual booleans untouched
+  })
   @IsBoolean()
   @IsOptional()
   lookingToRecruit?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Path to the user’s profile picture',
-    example: '/uploads/profile_pictures/user123.jpg',
+    description: 'Profile image filename or path (optional)',
+    type: 'string',
+    format: 'binary',
   })
   @IsString()
   @IsOptional()
-  profilePicturePath?: string;
+  @IsNotEmpty()
+  profileImage?: string; // Optional since a profile image can be null
 }

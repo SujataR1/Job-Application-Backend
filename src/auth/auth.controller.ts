@@ -117,6 +117,10 @@ export class AuthController {
     summary: 'Update user information',
     description: 'Updates the user information, except passwords.',
   })
+  @UseInterceptors(
+    FileInterceptor('profileImage', Utilities.multerSetup('Users')),
+  ) // Interceptor for file handling
+  @ApiConsumes('multipart/form-data') // Swagger annotation for handling file uploads
   @ApiHeader({
     name: 'Authorization',
     description: 'Bearer token for authentication',
@@ -147,9 +151,12 @@ export class AuthController {
   })
   async updateUser(
     @Headers('authorization') authorizationHeader: string,
-
+    @UploadedFile() profileImage: Express.Multer.File,
     @Body() updateUserDto: UpdateUserDto, // DTO for fields to update
   ) {
+    if (profileImage) {
+      updateUserDto.profileImage = profileImage.path; // Save filename or path to DTO
+    }
     return this.authService.updateUser(authorizationHeader, updateUserDto);
   }
 
