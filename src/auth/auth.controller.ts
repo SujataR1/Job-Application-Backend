@@ -122,7 +122,7 @@ export class AuthController {
   ) // Interceptor for file handling
   @ApiConsumes('multipart/form-data') // Swagger annotation for handling file uploads
   @ApiHeader({
-    name: 'Authorization',
+    name: 'authorization',
     description: 'Bearer token for authentication',
   })
   @ApiBody({
