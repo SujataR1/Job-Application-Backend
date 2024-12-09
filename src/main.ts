@@ -30,6 +30,7 @@ async function bootstrap() {
     origin: '*', // Allow all origins
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Allow all HTTP methods
     allowedHeaders: '*', // Allow all headers
+    exposedHeaders: 'Authorization, User_Type',
     credentials: true, // Disable credentials
   });
 
