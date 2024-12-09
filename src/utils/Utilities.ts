@@ -197,8 +197,8 @@ export class Utilities {
           const buffer = await file.stream.pipe(sharp().metadata());
           const { width, height } = buffer;
 
-          const maxWidth = 413; // Example max width
-          const maxHeight = 531; // Example max height
+          const maxWidth = 414; // Example max width
+          const maxHeight = 532; // Example max height
 
           if (width > maxWidth || height > maxHeight) {
             return callback(
