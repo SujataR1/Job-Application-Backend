@@ -111,6 +111,7 @@ export class AuthService {
 
     // Set the encrypted token in the Authorization header
     res.setHeader('Authorization', `Bearer ${encryptedToken}`);
+    res.setHeader('User_Type', `${user.userType}`);
 
     // Send the response
     return res.status(200).json({
@@ -177,7 +178,6 @@ export class AuthService {
 
       return {
         message: 'User information updated successfully',
-        updatedFields: allowedUpdates,
       };
     } catch (error) {
       throw new InternalServerErrorException(
