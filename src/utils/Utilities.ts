@@ -9,6 +9,7 @@ import {
   NotFoundException,
   InternalServerErrorException,
 } from '@nestjs/common';
+import * as sharp from 'sharp';
 
 export class Utilities {
   private static jwtService = new JwtService({
@@ -183,16 +184,34 @@ export class Utilities {
           callback(null, uniqueName); // Generate a unique filename
         },
       }),
-      fileFilter: (req, file, callback) => {
+      fileFilter: async (req, file, callback) => {
         try {
+          // Validate MIME type
           Utilities.validateFileType(file, [
             'image/jpeg',
             'image/png',
             'image/gif',
-          ]); // Validate MIME type
+          ]);
+
+          // Validate resolution using sharp
+          const buffer = await file.stream.pipe(sharp().metadata());
+          const { width, height } = buffer;
+
+          const maxWidth = 1920; // Example max width
+          const maxHeight = 1080; // Example max height
+
+          if (width > maxWidth || height > maxHeight) {
+            return callback(
+              new Error(
+                `Image resolution exceeds the allowed limit of ${maxWidth}x${maxHeight}px. Your image is ${width}x${height}px.`,
+              ),
+              false,
+            );
+          }
+
           callback(null, true);
         } catch (error) {
-          callback(error, false); // Reject unsupported file types
+          callback(error, false); // Reject invalid images
         }
       },
       limits: {
