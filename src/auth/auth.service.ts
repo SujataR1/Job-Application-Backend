@@ -178,7 +178,6 @@ export class AuthService {
 
       return {
         message: 'User information updated successfully',
-        updatedFields: allowedUpdates,
       };
     } catch (error) {
       throw new InternalServerErrorException(
