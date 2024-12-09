@@ -30,7 +30,7 @@ async function bootstrap() {
     origin: '*', // Allow all origins
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Allow all HTTP methods
     allowedHeaders: '*', // Allow all headers
-    credentials: false, // Disable credentials
+    credentials: true, // Disable credentials
   });
 
   await app.listen(7000); // Start the NestJS app on port 7000
