@@ -189,8 +189,13 @@ export class Utilities {
           // Validate MIME type
           Utilities.validateFileType(file, [
             'image/jpeg',
+            'image/jpg',
             'image/png',
             'image/gif',
+            'image/bimp',
+            'image/bmp',
+            'image/webp',
+            'image/svg',
           ]);
 
           // Validate resolution using sharp
