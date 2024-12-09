@@ -111,11 +111,11 @@ export class AuthService {
 
     // Set the encrypted token in the Authorization header
     res.setHeader('Authorization', `Bearer ${encryptedToken}`);
+    res.setHeader('User_Type', `${user.userType}`);
 
     // Send the response
     return res.status(200).json({
       message: 'You have successfully logged in!',
-      userType: user.userType,
     });
   }
 
