@@ -12,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
 import { Utilities } from '../utils/Utilities';
 import * as bcrypt from 'bcrypt';
+import { UpdateUserDto } from './dto/update.dto';
 
 @Injectable()
 export class AuthService {
@@ -57,7 +58,7 @@ export class AuthService {
       }
     }
 
-    // Hash the password
+    // Hash the password before storing it
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create the user in the database
@@ -114,6 +115,7 @@ export class AuthService {
     // Send the response
     return res.status(200).json({
       message: 'You have successfully logged in!',
+      userType: user.userType,
     });
   }
 
@@ -138,5 +140,86 @@ export class AuthService {
     return {
       message: 'You have successfully logged out!',
     };
+  }
+
+  async updateUser(
+    authorizationHeader: string, // Extract userId from the JWT in the Authorization header
+    updateUserDto: UpdateUserDto,
+  ) {
+    const { email, ...allowedUpdates } = updateUserDto; // Exclude password
+
+    // Verify the JWT and get the userId
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+    const userId = decoded.id; // Extract userId from the token payload
+
+    // Handle email updates
+    if (email) {
+      // Check if the email is already in use
+      const existingUserByEmail = await this.prisma.user.findUnique({
+        where: { email },
+      });
+      if (existingUserByEmail && existingUserByEmail.id !== userId) {
+        throw new ConflictException(
+          'A user with this email already exists. Please use a different email.',
+        );
+      }
+
+      // If the email is being changed, add email and emailVerified to allowedUpdates
+      allowedUpdates['email'] = email; // Explicitly add email
+      allowedUpdates['emailVerified'] = false; // Explicitly add emailVerified
+    }
+
+    try {
+      // Update the user
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: allowedUpdates,
+      });
+
+      return {
+        message: 'User information updated successfully',
+        updatedFields: allowedUpdates,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to update user information. Please try again.',
+      );
+    }
+  }
+
+  async deleteUser(authorizationHeader: string, password: string) {
+    // Verify the JWT and get the userId
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+    const userId = decoded.id; // Extract userId from the token payload
+
+    // Fetch the user to ensure they exist
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    // Verify the provided password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('You have entered an incorrect password');
+    }
+
+    try {
+      // Delete the user
+      await this.prisma.user.delete({ where: { id: userId } });
+
+      // Add the token to the Blacklisted_Tokens table
+      const token = authorizationHeader.split(' ')[1];
+      await this.prisma.blacklisted_Tokens.create({
+        data: {
+          blacklistedToken: token,
+        },
+      });
+
+      return {
+        message: 'User deleted successfully',
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to delete user. Please try again.',
+      );
+    }
   }
 }
