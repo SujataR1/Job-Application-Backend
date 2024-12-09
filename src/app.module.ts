@@ -17,13 +17,6 @@ import { PrismaModule } from 'prisma/prisma.module';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({
-  imports: [
-    AuthModule,
-    PrismaModule,
-    JwtModule.register({
-      secret: 'your-secret-key', // Use environment variables for production
-      signOptions: { expiresIn: '1h' },
-    }),
-  ],
+  imports: [AuthModule, PrismaModule],
 })
 export class AppModule {}
