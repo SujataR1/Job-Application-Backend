@@ -115,6 +115,7 @@ export class AuthService {
     // Send the response
     return res.status(200).json({
       message: 'You have successfully logged in!',
+      userType: user.userType,
     });
   }
 
