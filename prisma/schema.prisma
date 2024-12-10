@@ -280,9 +280,8 @@ model Comments {
 
   attachments Comment_Attachments[]
 
-  // Self-referential relationship for parent-child comments
-  parentId String? // Foreign key to parent comment
-  parent   Comments?  @relation("ParentComment", fields: [parentId], references: [id], onDelete: SetNull) // Prevent deletion of child comments
+  parentId String?
+  parent   Comments?  @relation("ParentComment", fields: [parentId], references: [id], onDelete: SetNull)
   children Comments[] @relation("ParentComment")
 }
 
