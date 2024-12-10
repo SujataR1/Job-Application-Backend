@@ -60,10 +60,7 @@ export const sendEmail = async (
       subject,
       html,
     });
-
-    console.log(`Email sent to ${to} for ${type}`);
   } catch (error) {
-    console.error(`Failed to send email to ${to}:`, error);
     throw new Error('Failed to send email');
   }
 };
