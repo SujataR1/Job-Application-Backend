@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsEmail, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsEmail, IsEnum } from 'class-validator';
 import { OTPType } from '@prisma/client';
 
 export class RequestOtpDto {

@@ -69,6 +69,7 @@ model User {
   jobProfile                 JobProfile?
   settings                   UserSettings?
   Posts                      Posts[]
+  Comments                   Comments[]
 }
 
 model Companies {
@@ -255,6 +256,7 @@ model Posts {
   visibility PostVisibilityEnum
 
   attachments Post_Attachments[]
+  Comments    Comments[]
 }
 
 model Post_Attachments {
@@ -264,4 +266,27 @@ model Post_Attachments {
   attachmentPath Json // Path to the attached file
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
+}
+
+model Comments {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Posts    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  content   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  attachments Comment_Attachments[]
+}
+
+model Comment_Attachments {
+  id             String    @id @default(uuid())
+  commentId      String
+  attachmentPath Json // Path to the attached file
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+  Comments       Comments? @relation(fields: [commentsId], references: [id], onDelete: Cascade)
+  commentsId     String?
 }

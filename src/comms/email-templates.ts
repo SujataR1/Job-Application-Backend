@@ -38,8 +38,8 @@ export const emailVerificationTemplate = (userName: string, otp: string) => `
 </head>
 <body>
     <h2>Hello ${userName},</h2>
-    <p>Thank you for registering with us. Please verify your email address by clicking the link below:</p>
-    <a href="${otp}" style="color: #1d70b8; text-decoration: none;">Verify Email</a>
+    <p>Thank you for registering with us. Please verify your email address using the following OTP:</p>
+    <h3>${otp}</h3>
     <p>If you did not create an account, you can safely ignore this email.</p>
     <p>Thank you,<br>Your Application Team</p>
 </body>
