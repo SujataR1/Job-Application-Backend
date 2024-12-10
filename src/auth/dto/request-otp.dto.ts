@@ -12,8 +12,8 @@ export class RequestOtpDto {
   email: string;
 
   @ApiProperty({
-    description: 'The type of OTP requested',
-    enum: OTPType,
+    description: 'The type of OTP being requested',
+    enum: OTPType, // This will show the enum values in Swagger
     example: OTPType.EmailVerification,
   })
   @IsEnum(OTPType)
