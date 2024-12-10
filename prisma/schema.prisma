@@ -279,11 +279,15 @@ model Comments {
   updatedAt DateTime @default(now()) @updatedAt
 
   attachments Comment_Attachments[]
+
+  // Self-referential relationship for parent-child comments
+  parentId String? // Foreign key to parent comment
+  parent   Comments?  @relation("ParentComment", fields: [parentId], references: [id], onDelete: SetNull) // Prevent deletion of child comments
+  children Comments[] @relation("ParentComment")
 }
 
 model Comment_Attachments {
   id             String    @id @default(uuid())
-  commentId      String
   attachmentPath Json // Path to the attached file
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @default(now()) @updatedAt
