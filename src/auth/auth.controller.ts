@@ -16,6 +16,7 @@ import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { Verify2FADto } from './dto/verify-two-fa.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { RequestOtpDto } from './dto/request-otp.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import {
@@ -160,6 +161,30 @@ export class AuthController {
     @Body('password') password: string,
   ) {
     return this.authService.deleteUser(authorizationHeader, password);
+  }
+
+  @Post('request-otp')
+  @ApiOperation({
+    summary: 'Request OTP',
+    description:
+      'Allows a user to request OTPs for various purposes like email verification, 2FA, or password reset.',
+  })
+  @ApiBody({
+    description: 'Details for requesting an OTP',
+    type: RequestOtpDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OTP sent successfully.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found.',
+  })
+  async requestOtp(@Body() requestOtpDto: RequestOtpDto) {
+    const { email, otpType } = requestOtpDto; // Extract email and OTP type from the request body
+    const message = await this.authService.requestOTP(email, otpType); // Call the service to generate and send OTP
+    return { message };
   }
 
   @Post('verify-email-otp')

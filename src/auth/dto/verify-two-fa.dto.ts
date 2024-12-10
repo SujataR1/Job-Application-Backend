@@ -12,7 +12,7 @@ export class Verify2FADto {
 
   @ApiProperty({
     description: 'The email of said user',
-    example: '654321',
+    example: 'abcd@example.com',
   })
   @IsString()
   @IsNotEmpty()
