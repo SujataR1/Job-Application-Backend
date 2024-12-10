@@ -13,6 +13,9 @@ import { Response } from 'express';
 import { Utilities } from '../utils/Utilities';
 import * as bcrypt from 'bcrypt';
 import { UpdateUserDto } from './dto/update.dto';
+import { OTPType } from '@prisma/client';
+import { randomBytes } from 'crypto';
+import { EmailType, sendEmail } from 'src/comms/methods';
 
 @Injectable()
 export class AuthService {
@@ -102,6 +105,24 @@ export class AuthService {
       throw new UnauthorizedException('Please check the entered credentials');
     }
 
+    // Check if two-factor authentication is enabled
+    if (user.twoFaEnabled) {
+      // Generate and send OTP for 2FA
+      const otp = await this.generateOTP(email, OTPType.TwoFa);
+
+      // Fetch user full name for email personalization
+      const fullName = user.fullName;
+
+      // Send 2FA email
+      await sendEmail(email, fullName, EmailType.TwoFA, otp);
+
+      // Return a 2FA pending response
+      return res.status(200).json({
+        message:
+          'Two-Factor Authentication is enabled. Please check your email for the OTP to complete login.',
+      });
+    }
+
     // Generate the JWT token
     const payload = { id: user.id }; // Encode the user ID in the JWT payload
     const token = this.jwtService.sign(payload);
@@ -109,7 +130,7 @@ export class AuthService {
     // Encrypt the token
     const encryptedToken = Utilities.encryptToken(token);
 
-    // Set the encrypted token in the Authorization header
+    // Set the encrypted token and the user type in the appropriate headers
     res.setHeader('Authorization', `Bearer ${encryptedToken}`);
     res.setHeader('User_Type', `${user.userType}`);
 
@@ -220,6 +241,249 @@ export class AuthService {
         'Failed to delete user. Please try again.',
       );
     }
+  }
+
+  private async generateOTP(email: string, otpType: OTPType): Promise<string> {
+    // Find the user by email
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      throw new NotFoundException(
+        'An user with this email does not exist in our records.',
+      );
+    }
+
+    // Ensure no duplicate OTPs exist for the same user and type
+    await this.prisma.oTP.deleteMany({
+      where: {
+        userId: user.id,
+        otpType,
+      },
+    });
+
+    // Generate a random OTP
+    const otp = randomBytes(3).toString('hex').toUpperCase(); // 6-character OTP
+
+    // Define OTP expiry time (e.g., 10 minutes from now)
+    const expiry = new Date();
+    expiry.setMinutes(expiry.getMinutes() + 10);
+
+    // Store the OTP in the database
+    await this.prisma.oTP.create({
+      data: {
+        otp,
+        otpType,
+        userId: user.id,
+        expiry,
+      },
+    });
+
+    return otp; // Return the OTP for use in communications (e.g., email, SMS)
+  }
+
+  private async validateOTP(
+    email: string,
+    otp: string,
+    otpType: OTPType,
+  ): Promise<boolean> {
+    // Find the user by email
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      throw new NotFoundException('User with this email does not exist.');
+    }
+
+    // Find the OTP record
+    const otpRecord = await this.prisma.oTP.findFirst({
+      where: {
+        userId: user.id,
+        otp,
+        otpType,
+      },
+    });
+
+    if (!otpRecord) {
+      throw new NotFoundException(
+        'The OTP enetered did not match any in our records. Please Try Again',
+      );
+    }
+
+    // Check if the OTP has expired
+    const now = new Date();
+    if (otpRecord.expiry < now) {
+      // Delete expired OTP
+      await this.prisma.oTP.delete({ where: { otp } });
+      throw new UnauthorizedException('OTP has expired.');
+    }
+
+    // OTP is valid; delete it
+    await this.prisma.oTP.delete({ where: { otp } });
+
+    return true; // Return true if OTP is valid
+  }
+
+  async requestOTP(email: string, otpType: OTPType): Promise<string> {
+    // Call the existing generateOTP method
+    const otp = await this.generateOTP(email, otpType);
+
+    // Determine the email type for sending the OTP
+    let emailType: EmailType;
+    switch (otpType) {
+      case OTPType.PasswordReset:
+        emailType = EmailType.PasswordReset;
+        break;
+      case OTPType.TwoFa:
+        emailType = EmailType.TwoFA;
+        break;
+      case OTPType.EmailVerification:
+        emailType = EmailType.EmailVerification;
+        break;
+      default:
+        throw new Error('Invalid OTP type provided');
+    }
+
+    // Fetch user information for the email
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new NotFoundException('User with this email does not exist.');
+    }
+
+    // Send the OTP via email
+    await sendEmail(user.email, user.fullName, emailType, otp);
+
+    return 'OTP has been sent successfully!';
+  }
+
+  async verifyEmailOTP(
+    authorizationHeader: string,
+    otp: string,
+  ): Promise<string> {
+    // Verify the JWT and extract user ID
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+    const userId = decoded.id; // Extract userId from the token payload
+
+    // Fetch the user by ID
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // Validate the OTP for EmailVerification type
+    const isValid = await this.validateOTP(
+      user.email,
+      otp,
+      OTPType.EmailVerification,
+    );
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid or expired OTP.');
+    }
+
+    // Update the emailVerified field for the user
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { emailVerified: true },
+    });
+
+    return 'Email has been successfully verified!';
+  }
+
+  async verifyTwoFaOTP(
+    email: string,
+    otp: string,
+    res: Response,
+  ): Promise<string> {
+    // Validate the OTP for Two-Factor Authentication
+    const isValid = await this.validateOTP(email, otp, OTPType.TwoFa);
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid or expired OTP.');
+    }
+
+    // Fetch the user by email
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // Generate the JWT token
+    const payload = { id: user.id }; // Encode the user ID in the JWT payload
+    const token = this.jwtService.sign(payload);
+
+    // Encrypt the token
+    const encryptedToken = Utilities.encryptToken(token);
+
+    // Set the encrypted token and the user type in the appropriate headers
+    res.setHeader('Authorization', `Bearer ${encryptedToken}`);
+    res.setHeader('User_Type', `${user.userType}`);
+
+    return 'You have successfully logged in via Two-Factor Authentication!';
+  }
+
+  async toggle2FA(authorizationHeader: string): Promise<string> {
+    // Verify the JWT and extract user ID
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+    const userId = decoded.id; // Extract userId from the token payload
+
+    // Fetch the user by ID
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // Check if the user's email is verified
+    if (!user.emailVerified) {
+      throw new UnauthorizedException(
+        'Two-Factor Authentication can only be toggled if your email is verified.',
+      );
+    }
+
+    // Toggle the 2FA status
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFaEnabled: !user.twoFaEnabled },
+    });
+
+    // Return a success message
+    if (updatedUser.twoFaEnabled) {
+      return 'Two-Factor Authentication has been enabled.';
+    } else {
+      return 'Two-Factor Authentication has been disabled.';
+    }
+  }
+
+  async verifyPasswordResetOTP(
+    email: string,
+    newPassword: string,
+    otp: string,
+  ): Promise<string> {
+    // Validate the OTP for PasswordReset type
+    const isValid = await this.validateOTP(email, otp, OTPType.PasswordReset);
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid or expired OTP.');
+    }
+
+    // Fetch the user by email
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password in the database
+    await this.prisma.user.update({
+      where: { email },
+      data: { password: hashedPassword },
+    });
+
+    return 'Your password has been successfully reset.';
   }
 }
 
