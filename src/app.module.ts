@@ -14,9 +14,9 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from 'prisma/prisma.module';
-import { JwtModule } from '@nestjs/jwt';
+import { UserSettingsModule } from './user-settings/user-settings.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule],
+  imports: [AuthModule, PrismaModule, UserSettingsModule],
 })
 export class AppModule {}

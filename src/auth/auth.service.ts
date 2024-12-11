@@ -185,9 +185,9 @@ export class AuthService {
         );
       }
 
-      // If the email is being changed, add email and emailVerified to allowedUpdates
       allowedUpdates['email'] = email; // Explicitly add email
       allowedUpdates['emailVerified'] = false; // Explicitly add emailVerified
+      allowedUpdates['twoFaEnabled'] = false; // Explicitly add twoFaEnabled
     }
 
     try {

@@ -67,7 +67,6 @@ model User {
   receivedMessages           Messages[]      @relation("Receiver")
   notifications              Notifications[]
   jobProfile                 JobProfile?
-  settings                   UserSettings?
   Posts                      Posts[]
   Comments                   Comments[]
 }
@@ -190,18 +189,6 @@ model CompanyAnalytics {
   averageSalary             Float?
   createdAt                 DateTime  @default(now())
   updatedAt                 DateTime  @default(now()) @updatedAt
-}
-
-model UserSettings {
-  id                         String   @id @default(uuid())
-  userId                     String   @unique
-  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  enableTwoFactorAuth        Boolean  @default(false)
-  allowMessagesFromStrangers Boolean  @default(true)
-  privateProfile             Boolean  @default(false)
-  searchableProfile          Boolean  @default(true)
-  createdAt                  DateTime @default(now())
-  updatedAt                  DateTime @default(now()) @updatedAt
 }
 
 model CompanyPageSettings {

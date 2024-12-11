@@ -129,7 +129,7 @@ export class AuthController {
     @UploadedFile() profileImage: Express.Multer.File,
   ) {
     if (profileImage) {
-      updateUserDto.profileImage = profileImage.path;
+      updateUserDto.profilePicturePath = profileImage.path;
     }
     return this.authService.updateUser(authorizationHeader, updateUserDto);
   }
