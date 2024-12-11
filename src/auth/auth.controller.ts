@@ -322,7 +322,6 @@ export class AuthController {
   }
 
   @Get('profile-picture')
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user profile picture' })
   @ApiResponse({
     status: 200,
