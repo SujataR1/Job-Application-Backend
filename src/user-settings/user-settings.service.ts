@@ -3,9 +3,8 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
-  HttpStatus,
 } from '@nestjs/common';
-import { Utilities } from '../utils/utilities'; // Adjust path to your Utilities class
+import { Utilities } from '../utils/utilities';
 import { UpdateUserSettingsDto } from './dto/update-user-settings.dto';
 
 @Injectable()
@@ -14,7 +13,8 @@ export class UserSettingsMethods {
 
   // Retrieve user settings
   async getUserSettings(authorization: string) {
-    const userId = await this.extractUserIdFromToken(authorization);
+    const decoded = await Utilities.VerifyJWT(authorization);
+    const userId = decoded.id;
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
@@ -37,7 +37,8 @@ export class UserSettingsMethods {
     authorization: string,
     settings: UpdateUserSettingsDto,
   ) {
-    const userId = await this.extractUserIdFromToken(authorization);
+    const decoded = await Utilities.VerifyJWT(authorization);
+    const userId = decoded.id;
 
     // Fetch the user's current data for validation
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -45,8 +46,33 @@ export class UserSettingsMethods {
       throw new BadRequestException('User not found.');
     }
 
-    // Validate the settings for lookingToApply and lookingToRecruit
-    if (settings.lookingToApply && settings.lookingToRecruit) {
+    // Automatically enforce mutual exclusivity
+    if (settings.lookingToApply === true) {
+      if (!user.lookingToApply) {
+        settings['lookingToRecruit'] = false; // Automatically flip the other flag if it was true
+      }
+      settings['userType'] = 'Applicant'; // Automatically set userType
+    } else if (settings.lookingToRecruit === true) {
+      if (!user.lookingToRecruit) {
+        settings['lookingToApply'] = false; // Automatically flip the other flag if it was true
+      }
+      settings['userType'] = 'Recruiter'; // Automatically set userType
+    }
+
+    // Validate for conflicting true values
+    if (
+      settings.lookingToApply === true &&
+      (settings.lookingToRecruit || user.lookingToRecruit)
+    ) {
+      throw new BadRequestException(
+        'You can only either apply or recruit from one account, but not both.',
+      );
+    }
+
+    if (
+      settings.lookingToRecruit === true &&
+      (settings.lookingToApply || user.lookingToApply)
+    ) {
       throw new BadRequestException(
         'You can only either apply or recruit from one account, but not both.',
       );
@@ -59,13 +85,6 @@ export class UserSettingsMethods {
       );
     }
 
-    // Determine userType based on the settings
-    if (settings.lookingToApply) {
-      settings['userType'] = 'Applicant'; // Assuming 'Applicant' is a valid value for userType
-    } else if (settings.lookingToRecruit) {
-      settings['userType'] = 'Recruiter'; // Assuming 'Recruiter' is a valid value for userType
-    }
-
     // Update user settings in the database
     await this.prisma.user.update({
       where: { id: userId },
@@ -73,11 +92,5 @@ export class UserSettingsMethods {
     });
 
     return { message: 'Settings saved successfully!' };
-  }
-
-  // Extract user ID from JWT token using VerifyJWT
-  private async extractUserIdFromToken(authorization: string): Promise<string> {
-    const decoded = await Utilities.VerifyJWT(authorization); // Call your existing VerifyJWT method
-    return decoded.id; // Extract the userId from the decoded payload
   }
 }
