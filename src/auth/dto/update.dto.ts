@@ -69,5 +69,5 @@ export class UpdateUserDto {
   @IsString()
   @IsOptional()
   @IsNotEmpty()
-  profileImage?: string; // Optional since a profile image can be null
+  profilePicturePath?: string; // Optional since a profile image can be null
 }
