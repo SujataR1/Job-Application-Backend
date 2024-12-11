@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
-import { Utilities } from '../utils/utilities'; // Adjust path to your Utilities class
+import { Utilities } from '../utils/utilities';
 import { UpdateUserSettingsDto } from './dto/update-user-settings.dto';
 
 @Injectable()
