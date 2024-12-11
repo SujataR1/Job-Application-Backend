@@ -187,7 +187,7 @@ export class AuthService {
 
       allowedUpdates['email'] = email; // Explicitly add email
       allowedUpdates['emailVerified'] = false; // Explicitly add emailVerified
-      allowedUpdates['twoFaEnabled'] = false;
+      allowedUpdates['twoFaEnabled'] = false; // Explicitly add twoFaEnabled
     }
 
     try {
