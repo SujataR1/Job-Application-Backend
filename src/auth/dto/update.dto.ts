@@ -70,4 +70,12 @@ export class UpdateUserDto {
   @IsOptional()
   @IsNotEmpty()
   profilePicturePath?: string; // Optional since a profile image can be null
+
+  @ApiPropertyOptional({
+    description: 'The ID of the Company that the user is associated with',
+    example: 'ABCD',
+  })
+  @IsString()
+  @IsOptional()
+  companyId?: string;
 }
