@@ -483,7 +483,7 @@ export class AuthService {
       data: { password: hashedPassword },
     });
 
-    return 'Your password has been successfully reset.';
+    return '{"message":"Your password has been successfully reset."}';
   }
 
   async getUserDetails(authorizationHeader: string) {
