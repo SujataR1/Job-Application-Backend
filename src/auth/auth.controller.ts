@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Patch,
   Delete,
@@ -294,5 +295,29 @@ export class AuthController {
   })
   async toggle2FA(@Headers('Authorization') authorizationHeader: string) {
     return this.authService.toggle2FA(authorizationHeader);
+  }
+
+  @Get('user-details')
+  @ApiOperation({
+    summary: 'Get User Details',
+    description:
+      'Fetch user details based on the provided authorization token.',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer token for authentication',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns user details, including profile picture encoded in Base64.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found.',
+  })
+  async getUserDetails(@Headers('Authorization') authorizationHeader: string) {
+    return this.authService.getUserDetails(authorizationHeader);
   }
 }
