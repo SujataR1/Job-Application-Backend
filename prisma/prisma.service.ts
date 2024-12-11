@@ -1,5 +1,4 @@
-// src/prisma/prisma.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
@@ -18,8 +17,8 @@ export class PrismaService extends PrismaClient {
 
         // Check if both fields are being set to true
         if (data.lookingToApply && data.lookingToRecruit) {
-          throw new Error(
-            'Only one of lookingToApply or lookingToRecruit can be true.',
+          throw new BadRequestException(
+            'You can either apply or recruit through one account, but not both',
           );
         }
 
