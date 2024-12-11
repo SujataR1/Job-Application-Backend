@@ -201,9 +201,11 @@ export class AuthService {
         message: 'User information updated successfully',
       };
     } catch (error) {
+      console.log (`${error}`)
       throw new InternalServerErrorException(
-        'Failed to update user information. Please try again.',
+        `Failed to update user information. Please try again.`,
       );
+      
     }
   }
 
