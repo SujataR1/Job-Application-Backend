@@ -4,6 +4,7 @@ import {
   ConflictException,
   NotFoundException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { SignUpDto } from './dto/sign-up.dto';
@@ -523,5 +524,37 @@ export class AuthService {
       company: user.company ? user.company.name : 'None', // Return "None" if no company is associated
       profilePicture, // Encoded Base64 string or null
     };
+  }
+
+  async getUserProfilePicture(authorization: string) {
+    const decoded = await Utilities.VerifyJWT(authorization); // Verify JWT and extract user ID
+    const userId = decoded.id;
+
+    // Fetch the user's profile picture path
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { profilePicturePath: true }, // Only fetch the profilePicturePath
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found.');
+    }
+
+    // Return null if no profile picture is set
+    if (!user.profilePicturePath) {
+      return null;
+    }
+
+    // Convert the profile picture to Base64
+    try {
+      const base64Image = await Utilities.encodeFileToBase64(
+        user.profilePicturePath,
+      );
+      return { profilePicture: base64Image };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to retrieve profile picture.',
+      );
+    }
   }
 }
