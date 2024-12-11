@@ -76,7 +76,7 @@ export class AuthService {
         lookingToApply,
         lookingToRecruit,
         about,
-        profilePicturePath: profileImage, // Store the file path or URL here
+        profilePicturePath: profileImage || null, // Store the file path or URL here
       },
     });
 
