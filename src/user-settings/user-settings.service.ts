@@ -46,23 +46,36 @@ export class UserSettingsMethods {
       throw new BadRequestException('User not found.');
     }
 
-    // Validate the settings for mutual exclusivity
+    // Automatically enforce mutual exclusivity
+    if (settings.lookingToApply === true) {
+      if (!user.lookingToApply) {
+        settings['lookingToRecruit'] = false; // Automatically flip the other flag if it was true
+      }
+      settings['userType'] = 'Applicant'; // Automatically set userType
+    } else if (settings.lookingToRecruit === true) {
+      if (!user.lookingToRecruit) {
+        settings['lookingToApply'] = false; // Automatically flip the other flag if it was true
+      }
+      settings['userType'] = 'Recruiter'; // Automatically set userType
+    }
+
+    // Validate for conflicting true values
     if (
       settings.lookingToApply === true &&
-      settings.lookingToRecruit === true
+      (settings.lookingToRecruit || user.lookingToRecruit)
     ) {
       throw new BadRequestException(
         'You can only either apply or recruit from one account, but not both.',
       );
     }
 
-    // Automatically adjust flags for mutual exclusivity
-    if (settings.lookingToApply === true) {
-      settings['lookingToRecruit'] = false; // Automatically set the other to false
-      settings['userType'] = 'Applicant'; // Automatically set userType
-    } else if (settings.lookingToRecruit === true) {
-      settings['lookingToApply'] = false; // Automatically set the other to false
-      settings['userType'] = 'Recruiter'; // Automatically set userType
+    if (
+      settings.lookingToRecruit === true &&
+      (settings.lookingToApply || user.lookingToApply)
+    ) {
+      throw new BadRequestException(
+        'You can only either apply or recruit from one account, but not both.',
+      );
     }
 
     // Ensure twoFaEnabled can only be true if emailVerified is true
