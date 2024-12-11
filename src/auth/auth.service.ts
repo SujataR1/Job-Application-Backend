@@ -485,4 +485,43 @@ export class AuthService {
 
     return 'Your password has been successfully reset.';
   }
+
+  async getUserDetails(authorizationHeader: string) {
+    // Extract and validate the JWT token
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+    const userId = decoded.id;
+
+    // Fetch user details from the database
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { company: true }, // Assuming a company relation exists
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // Encode profile picture to Base64 with MIME type if it exists
+    let profilePicture = null;
+    if (user.profilePicturePath) {
+      try {
+        profilePicture = await Utilities.encodeFileToBase64(
+          user.profilePicturePath,
+        );
+      } catch (error) {
+        console.error('Error encoding profile picture:', error);
+        // Profile picture issues are logged but do not block the response
+      }
+    }
+
+    // Return user details
+    return {
+      fullName: user.fullName,
+      email: user.email,
+      about: user.about,
+      phoneNumber: user.phoneNumber,
+      company: user.company ? user.company.name : 'None', // Return "None" if no company is associated
+      profilePicture, // Encoded Base64 string or null
+    };
+  }
 }

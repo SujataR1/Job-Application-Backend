@@ -246,17 +246,21 @@ enum PostVisibilityEnum {
 }
 
 model Posts {
-  id         String             @id @default(uuid())
-  userId     String
-  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title      String
-  content    String?
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @default(now()) @updatedAt
-  visibility PostVisibilityEnum
-
+  id          String             @id @default(uuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String?
+  content     String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @default(now()) @updatedAt
+  visibility  PostVisibilityEnum
   attachments Post_Attachments[]
   Comments    Comments[]
+
+  originalPostId String? // Link to the original post
+  originalPost   Posts?  @relation("OriginalPost", fields: [originalPostId], references: [id], onDelete: SetNull)
+  reposts        Posts[] @relation("OriginalPost")
+  isRepost       Boolean @default(false) // Flag to mark reposted content
 }
 
 model Post_Attachments {
@@ -279,11 +283,14 @@ model Comments {
   updatedAt DateTime @default(now()) @updatedAt
 
   attachments Comment_Attachments[]
+
+  parentId String?
+  parent   Comments?  @relation("ParentComment", fields: [parentId], references: [id], onDelete: SetNull)
+  children Comments[] @relation("ParentComment")
 }
 
 model Comment_Attachments {
   id             String    @id @default(uuid())
-  commentId      String
   attachmentPath Json // Path to the attached file
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @default(now()) @updatedAt

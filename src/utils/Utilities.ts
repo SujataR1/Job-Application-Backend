@@ -204,4 +204,46 @@ export class Utilities {
       },
     };
   }
+
+  /**
+   * Encodes a file to a Base64 string including its MIME type.
+   * @param filePath - The path to the file
+   * @returns A string in the format `data:<mimetype>;base64,<base64data>`
+   * @throws NotFoundException if the file does not exist
+   * @throws InternalServerErrorException if the encoding fails
+   */
+  static async encodeFileToBase64(filePath: string): Promise<string> {
+    const resolvedPath = path.resolve(filePath);
+
+    // Check if the file exists
+    if (!fs.existsSync(resolvedPath)) {
+      throw new NotFoundException(`File not found at path: ${resolvedPath}`);
+    }
+
+    try {
+      // Read the file as a Buffer
+      const fileBuffer = await fs.promises.readFile(resolvedPath);
+
+      // Determine the MIME type
+      const mime = require('mime-types');
+      const mimeType = mime.lookup(resolvedPath);
+
+      if (!mimeType) {
+        throw new InternalServerErrorException(
+          `Unable to determine MIME type for file at path: ${resolvedPath}`,
+        );
+      }
+
+      // Convert the file buffer to Base64
+      const base64Data = fileBuffer.toString('base64');
+
+      // Return the Base64-encoded string with MIME type
+      return `data:${mimeType};base64,${base64Data}`;
+    } catch (error) {
+      console.error('Error encoding file to Base64:', error);
+      throw new InternalServerErrorException(
+        `Failed to encode file at path: ${resolvedPath}`,
+      );
+    }
+  }
 }
