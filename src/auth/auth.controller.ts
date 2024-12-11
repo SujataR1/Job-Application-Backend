@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Patch,
   Delete,
@@ -267,5 +268,56 @@ export class AuthController {
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     const { email, otp, newPassword } = resetPasswordDto;
     return this.authService.verifyPasswordResetOTP(email, newPassword, otp);
+  }
+
+  @Post('toggle-2fa')
+  @ApiOperation({
+    summary: 'Toggle Two-Factor Authentication',
+    description:
+      'Enables or disables Two-Factor Authentication (2FA) for the authenticated user. The user must have a verified email to enable 2FA.',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer token for authentication',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '2FA toggled successfully. Returns the current 2FA status.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Email not verified or invalid token.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found.',
+  })
+  async toggle2FA(@Headers('Authorization') authorizationHeader: string) {
+    return this.authService.toggle2FA(authorizationHeader);
+  }
+
+  @Get('user-details')
+  @ApiOperation({
+    summary: 'Get User Details',
+    description:
+      'Fetch user details based on the provided authorization token.',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer token for authentication',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns user details, including profile picture encoded in Base64.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found.',
+  })
+  async getUserDetails(@Headers('Authorization') authorizationHeader: string) {
+    return this.authService.getUserDetails(authorizationHeader);
   }
 }
