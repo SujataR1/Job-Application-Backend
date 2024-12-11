@@ -39,20 +39,40 @@ export class UserSettingsMethods {
   ) {
     const userId = await this.extractUserIdFromToken(authorization);
 
+    // Fetch the user's current data for validation
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new BadRequestException('User not found.');
+    }
+
     // Validate the settings for lookingToApply and lookingToRecruit
     if (settings.lookingToApply && settings.lookingToRecruit) {
       throw new BadRequestException(
-        'Only one of lookingToApply or lookingToRecruit can be true.',
+        'You can only either apply or recruit from one account, but not both.',
       );
     }
 
+    // Ensure twoFaEnabled can only be true if emailVerified is true
+    if (settings.twoFaEnabled && !user.emailVerified) {
+      throw new BadRequestException(
+        'Two-Factor Authentication can only be enabled if the email is verified.',
+      );
+    }
+
+    // Determine userType based on the settings
+    if (settings.lookingToApply) {
+      settings['userType'] = 'Applicant'; // Assuming 'Applicant' is a valid value for userType
+    } else if (settings.lookingToRecruit) {
+      settings['userType'] = 'Recruiter'; // Assuming 'Recruiter' is a valid value for userType
+    }
+
     // Update user settings in the database
-    this.prisma.user.update({
+    await this.prisma.user.update({
       where: { id: userId },
       data: settings,
     });
 
-    return `{"message":"Settings saved successfully!"}`;
+    return { message: 'Settings saved successfully!' };
   }
 
   // Extract user ID from JWT token using VerifyJWT
