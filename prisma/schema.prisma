@@ -74,12 +74,27 @@ model User {
   Comments                   Comments[]
 }
 
+model IndustryCompany {
+  industryId String
+  companyId  String
+  industry   Industries @relation(fields: [industryId], references: [id], onDelete: Cascade)
+  company    Companies  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([industryId, companyId]) // Composite primary key
+}
+
+model Industries {
+  id        String            @id @unique @default(uuid())
+  name      String            @unique
+  companies IndustryCompany[]
+}
+
 model Companies {
   id             String               @id @unique @default(uuid())
   name           String
   description    String
   websiteLink    String?
-  industry       String
+  industryLinks  IndustryCompany[]
   about          String?
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @default(now()) @updatedAt
