@@ -352,13 +352,10 @@ export class AuthService {
     // Send the OTP via email
     await sendEmail(user.email, user.fullName, emailType, otp);
 
-    return 'OTP has been sent successfully!';
+    return `'message': 'OTP has been sent successfully!'`;
   }
 
-  async verifyEmailOTP(
-    authorizationHeader: string,
-    otp: string,
-  ): Promise<string> {
+  async verifyEmailOTP(authorizationHeader: string, otp: string) {
     // Verify the JWT and extract user ID
     const decoded = await Utilities.VerifyJWT(authorizationHeader);
     const userId = decoded.id; // Extract userId from the token payload
@@ -387,7 +384,7 @@ export class AuthService {
       data: { emailVerified: true },
     });
 
-    return 'Email has been successfully verified!';
+    return { message: 'Email has been successfully verified!' };
   }
 
   async verifyTwoFaOTP(email: string, otp: string, res: Response) {
@@ -421,7 +418,7 @@ export class AuthService {
     });
   }
 
-  async toggle2FA(authorizationHeader: string): Promise<string> {
+  async toggle2FA(authorizationHeader: string) {
     // Verify the JWT and extract user ID
     const decoded = await Utilities.VerifyJWT(authorizationHeader);
     const userId = decoded.id; // Extract userId from the token payload
@@ -448,9 +445,9 @@ export class AuthService {
 
     // Return a success message
     if (updatedUser.twoFaEnabled) {
-      return 'Two-Factor Authentication has been enabled.';
+      return { message: 'Two-Factor Authentication has been enabled.' };
     } else {
-      return 'Two-Factor Authentication has been disabled.';
+      return { message: 'Two-Factor Authentication has been disabled.' };
     }
   }
 
@@ -458,7 +455,7 @@ export class AuthService {
     email: string,
     newPassword: string,
     otp: string,
-  ): Promise<string> {
+  ) {
     // Validate the OTP for PasswordReset type
     const isValid = await this.validateOTP(email, otp, OTPType.PasswordReset);
 
@@ -517,6 +514,7 @@ export class AuthService {
     return {
       fullName: user.fullName,
       email: user.email,
+      isEmailVerified: user.emailVerified,
       about: user.about,
       phoneNumber: user.phoneNumber,
       company: user.company ? user.company.name : 'None', // Return "None" if no company is associated
@@ -552,6 +550,54 @@ export class AuthService {
     } catch (error) {
       throw new InternalServerErrorException(
         'Failed to retrieve profile picture.',
+      );
+    }
+  }
+
+  async changePassword(
+    authorizationHeader: string,
+    oldPassword: string,
+    newPassword: string,
+  ) {
+    // Validate the JWT token and extract user ID
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+    const userId = decoded.id; // Extract user ID from the token payload
+
+    // Fetch the user by ID
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // Verify the old password
+    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isOldPasswordValid) {
+      throw new UnauthorizedException('Incorrect old password.');
+    }
+
+    // Check if the new password is the same as the old password
+    const isNewPasswordSame = await bcrypt.compare(newPassword, user.password);
+    if (isNewPasswordSame) {
+      throw new BadRequestException(
+        'The new password cannot be the same as the old password.',
+      );
+    }
+
+    // Hash the new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password in the database
+    try {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedNewPassword },
+      });
+
+      return { message: 'Password has been successfully changed.' };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to change password. Please try again later.',
       );
     }
   }

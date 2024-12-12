@@ -27,7 +27,7 @@ enum OTPType {
   EmailVerification
 }
 
-enum NetworkStatusType {
+enum FriendRequestStatusType {
   Pending
   Accepted
   Rejected
@@ -59,29 +59,51 @@ model User {
   companyPageAdmin           Companies[]     @relation("CompanyAdmins")
   jobPoster                  JobPostings[]   @relation("JobPoster")
   applications               Application[]
-  friendsInitiator           Networks[]      @relation("FriendsInitiator")
-  friendsReceiver            Networks[]      @relation("FriendsReceiver")
+  friendsInitiator           Friends[]       @relation("FriendsInitiator")
+  friendsReceiver            Friends[]       @relation("FriendsReceiver")
   blockedUsers               UserBlockList[] @relation("BlockedUsersFor")
   blockedByUsers             UserBlockList[] @relation("BlockedUsersBy")
   sentMessages               Messages[]      @relation("Sender")
   receivedMessages           Messages[]      @relation("Receiver")
   notifications              Notifications[]
   jobProfile                 JobProfile?
+  companiesFollowed          Companies[]     @relation("CompaniesFollowed")
+  usersFollowed              User[]          @relation("UsersFollowed")
+  followers                  User[]          @relation("UsersFollowed")
   Posts                      Posts[]
   Comments                   Comments[]
 }
 
+model IndustryCompany {
+  industryId String
+  companyId  String
+  industry   Industries @relation(fields: [industryId], references: [id], onDelete: Cascade)
+  company    Companies  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([industryId, companyId]) // Composite primary key
+}
+
+model Industries {
+  id        String            @id @unique @default(uuid())
+  name      String            @unique
+  companies IndustryCompany[]
+}
+
 model Companies {
-  id            String               @id @unique @default(uuid())
-  name          String
-  description   String
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @default(now()) @updatedAt
-  usersInvolved User[]               @relation("CompanyUsers")
-  jobPostings   JobPostings[]
-  pageAdmins    User[]               @relation("CompanyAdmins")
-  analytics     CompanyAnalytics?
-  pageSettings  CompanyPageSettings?
+  id             String               @id @unique @default(uuid())
+  name           String
+  description    String
+  websiteLink    String?
+  industryLinks  IndustryCompany[]
+  about          String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @default(now()) @updatedAt
+  usersInvolved  User[]               @relation("CompanyUsers")
+  usersFollowing User[]               @relation("CompaniesFollowed")
+  jobPostings    JobPostings[]
+  pageAdmins     User[]               @relation("CompanyAdmins")
+  analytics      CompanyAnalytics?
+  pageSettings   CompanyPageSettings?
 }
 
 model Messages {
@@ -164,15 +186,15 @@ model Blacklisted_Tokens {
   blacklistedAt    DateTime @default(now())
 }
 
-model Networks {
-  id          String            @id @default(uuid())
+model Friends {
+  id          String                  @id @default(uuid())
   requesterId String
-  requester   User              @relation("FriendsInitiator", fields: [requesterId], references: [id], onDelete: Cascade)
+  requester   User                    @relation("FriendsInitiator", fields: [requesterId], references: [id], onDelete: Cascade)
   receiverId  String
-  receiver    User              @relation("FriendsReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  status      NetworkStatusType
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @default(now()) @updatedAt
+  receiver    User                    @relation("FriendsReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  status      FriendRequestStatusType
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @default(now()) @updatedAt
 }
 
 model CompanyAnalytics {
