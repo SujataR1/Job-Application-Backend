@@ -352,7 +352,7 @@ export class AuthService {
     // Send the OTP via email
     await sendEmail(user.email, user.fullName, emailType, otp);
 
-    return 'OTP has been sent successfully!';
+    return `'message': 'OTP has been sent successfully!'`;
   }
 
   async verifyEmailOTP(
