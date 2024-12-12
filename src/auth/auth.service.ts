@@ -4,6 +4,7 @@ import {
   ConflictException,
   NotFoundException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { SignUpDto } from './dto/sign-up.dto';
@@ -75,7 +76,7 @@ export class AuthService {
         lookingToApply,
         lookingToRecruit,
         about,
-        profilePicturePath: profileImage, // Store the file path or URL here
+        profilePicturePath: profileImage || null, // Store the file path or URL here
       },
     });
 
@@ -389,11 +390,7 @@ export class AuthService {
     return 'Email has been successfully verified!';
   }
 
-  async verifyTwoFaOTP(
-    email: string,
-    otp: string,
-    res: Response,
-  ): Promise<string> {
+  async verifyTwoFaOTP(email: string, otp: string, res: Response) {
     // Validate the OTP for Two-Factor Authentication
     const isValid = await this.validateOTP(email, otp, OTPType.TwoFa);
 
@@ -419,7 +416,9 @@ export class AuthService {
     res.setHeader('Authorization', `Bearer ${encryptedToken}`);
     res.setHeader('User_Type', `${user.userType}`);
 
-    return 'You have successfully logged in via Two-Factor Authentication!';
+    return res.status(200).json({
+      message: 'You have successfully logged in!',
+    });
   }
 
   async toggle2FA(authorizationHeader: string): Promise<string> {
@@ -523,6 +522,38 @@ export class AuthService {
       company: user.company ? user.company.name : 'None', // Return "None" if no company is associated
       profilePicture, // Encoded Base64 string or null
     };
+  }
+
+  async getUserProfilePicture(authorization: string) {
+    const decoded = await Utilities.VerifyJWT(authorization); // Verify JWT and extract user ID
+    const userId = decoded.id;
+
+    // Fetch the user's profile picture path
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { profilePicturePath: true }, // Only fetch the profilePicturePath
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found.');
+    }
+
+    // Return null if no profile picture is set
+    if (!user.profilePicturePath) {
+      return null;
+    }
+
+    // Convert the profile picture to Base64
+    try {
+      const base64Image = await Utilities.encodeFileToBase64(
+        user.profilePicturePath,
+      );
+      return { profilePicture: base64Image };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to retrieve profile picture.',
+      );
+    }
   }
 }
 

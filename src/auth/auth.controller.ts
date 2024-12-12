@@ -247,8 +247,7 @@ export class AuthController {
   })
   async verifyTwoFa(@Body() verify2FADto: Verify2FADto, @Res() res: Response) {
     const { email, otp } = verify2FADto;
-    const message = await this.authService.verifyTwoFaOTP(email, otp, res);
-    return { message };
+    return this.authService.verifyTwoFaOTP(email, otp, res);
   }
 
   // Reset password
@@ -319,5 +318,23 @@ export class AuthController {
   })
   async getUserDetails(@Headers('Authorization') authorizationHeader: string) {
     return this.authService.getUserDetails(authorizationHeader);
+  }
+
+  @Get('profile-picture')
+  @ApiOperation({ summary: 'Get user profile picture' })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile picture retrieved successfully.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'User not found.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Failed to retrieve profile picture.',
+  })
+  async getUserProfilePicture(@Headers('Authorization') authorization: string) {
+    return this.authService.getUserProfilePicture(authorization);
   }
 }
