@@ -357,10 +357,7 @@ export class AuthService {
     return `'message': 'OTP has been sent successfully!'`;
   }
 
-  async verifyEmailOTP(
-    authorizationHeader: string,
-    otp: string,
-  ): Promise<string> {
+  async verifyEmailOTP(authorizationHeader: string, otp: string) {
     // Verify the JWT and extract user ID
     const decoded = await Utilities.VerifyJWT(authorizationHeader);
     const userId = decoded.id; // Extract userId from the token payload
@@ -389,8 +386,7 @@ export class AuthService {
       data: { emailVerified: true },
     });
 
-    return 'Email has been successfully verified!';
-    
+    return { message: 'Email has been successfully verified!' };
   }
 
   async verifyTwoFaOTP(email: string, otp: string, res: Response) {
@@ -424,7 +420,7 @@ export class AuthService {
     });
   }
 
-  async toggle2FA(authorizationHeader: string): Promise<string> {
+  async toggle2FA(authorizationHeader: string) {
     // Verify the JWT and extract user ID
     const decoded = await Utilities.VerifyJWT(authorizationHeader);
     const userId = decoded.id; // Extract userId from the token payload
@@ -451,9 +447,9 @@ export class AuthService {
 
     // Return a success message
     if (updatedUser.twoFaEnabled) {
-      return 'Two-Factor Authentication has been enabled.';
+      return { message: 'Two-Factor Authentication has been enabled.' };
     } else {
-      return 'Two-Factor Authentication has been disabled.';
+      return { message: 'Two-Factor Authentication has been disabled.' };
     }
   }
 
@@ -461,7 +457,7 @@ export class AuthService {
     email: string,
     newPassword: string,
     otp: string,
-  ): Promise<string> {
+  ) {
     // Validate the OTP for PasswordReset type
     const isValid = await this.validateOTP(email, otp, OTPType.PasswordReset);
 
