@@ -76,7 +76,7 @@ export class AuthService {
         lookingToApply,
         lookingToRecruit,
         about,
-        profilePicturePath: profileImage || null,// Store the file path or URL here
+        profilePicturePath: profileImage || null, // Store the file path or URL here
       },
     });
 
@@ -354,7 +354,7 @@ export class AuthService {
     // Send the OTP via email
     await sendEmail(user.email, user.fullName, emailType, otp);
 
-    return 'OTP has been sent successfully!';
+    return `'message': 'OTP has been sent successfully!'`;
   }
 
   async verifyEmailOTP(
@@ -390,13 +390,10 @@ export class AuthService {
     });
 
     return 'Email has been successfully verified!';
+    
   }
 
-  async verifyTwoFaOTP(
-    email: string,
-    otp: string,
-    res: Response,
-  ): Promise<string> {
+  async verifyTwoFaOTP(email: string, otp: string, res: Response) {
     // Validate the OTP for Two-Factor Authentication
     const isValid = await this.validateOTP(email, otp, OTPType.TwoFa);
 
@@ -422,7 +419,9 @@ export class AuthService {
     res.setHeader('Authorization', `Bearer ${encryptedToken}`);
     res.setHeader('User_Type', `${user.userType}`);
 
-    return 'You have successfully logged in via Two-Factor Authentication!';
+    return res.status(200).json({
+      message: 'You have successfully logged in!',
+    });
   }
 
   async toggle2FA(authorizationHeader: string): Promise<string> {
