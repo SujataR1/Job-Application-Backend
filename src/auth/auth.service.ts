@@ -333,9 +333,6 @@ export class AuthService {
       case OTPType.PasswordReset:
         emailType = EmailType.PasswordReset;
         break;
-      case OTPType.TwoFa:
-        emailType = EmailType.TwoFA;
-        break;
       case OTPType.EmailVerification:
         emailType = EmailType.EmailVerification;
         break;
