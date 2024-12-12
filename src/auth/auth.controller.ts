@@ -247,8 +247,7 @@ export class AuthController {
   })
   async verifyTwoFa(@Body() verify2FADto: Verify2FADto, @Res() res: Response) {
     const { email, otp } = verify2FADto;
-    const message = await this.authService.verifyTwoFaOTP(email, otp, res);
-    return { message };
+    return this.authService.verifyTwoFaOTP(email, otp, res);
   }
 
   // Reset password
