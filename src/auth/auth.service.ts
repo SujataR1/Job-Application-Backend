@@ -555,4 +555,52 @@ export class AuthService {
       );
     }
   }
+
+  async changePassword(
+    authorizationHeader: string,
+    oldPassword: string,
+    newPassword: string,
+  ) {
+    // Validate the JWT token and extract user ID
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+    const userId = decoded.id; // Extract user ID from the token payload
+
+    // Fetch the user by ID
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // Verify the old password
+    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isOldPasswordValid) {
+      throw new UnauthorizedException('Incorrect old password.');
+    }
+
+    // Check if the new password is the same as the old password
+    const isNewPasswordSame = await bcrypt.compare(newPassword, user.password);
+    if (isNewPasswordSame) {
+      throw new BadRequestException(
+        'The new password cannot be the same as the old password.',
+      );
+    }
+
+    // Hash the new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password in the database
+    try {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedNewPassword },
+      });
+
+      return { message: 'Password has been successfully changed.' };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to change password. Please try again later.',
+      );
+    }
+  }
 }
