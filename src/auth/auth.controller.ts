@@ -269,6 +269,58 @@ export class AuthController {
     return this.authService.verifyPasswordResetOTP(email, newPassword, otp);
   }
 
+  @Patch('change-password')
+  @ApiOperation({
+    summary: 'Change Password',
+    description: 'Allows the user to change their password.',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer token for authentication',
+    required: true,
+  })
+  @ApiBody({
+    description: 'Change password details',
+    schema: {
+      type: 'object',
+      properties: {
+        oldPassword: { type: 'string', example: 'oldPassword123' },
+        newPassword: { type: 'string', example: 'newPassword456' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password changed successfully.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid token or incorrect old password.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid input or same new password.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error.',
+  })
+  async changePassword(
+    @Headers('Authorization') authorizationHeader: string,
+    @Body('oldPassword') oldPassword: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    return this.authService.changePassword(
+      authorizationHeader,
+      oldPassword,
+      newPassword,
+    );
+  }
+
   @Post('toggle-2fa')
   @ApiOperation({
     summary: 'Toggle Two-Factor Authentication',
