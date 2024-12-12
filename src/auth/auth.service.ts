@@ -514,11 +514,11 @@ export class AuthService {
     return {
       fullName: user.fullName,
       email: user.email,
+      isEmailVerified: user.emailVerified,
       about: user.about,
       phoneNumber: user.phoneNumber,
       company: user.company ? user.company.name : 'None', // Return "None" if no company is associated
       profilePicture, // Encoded Base64 string or null
-      isEmailVerified: user.emailVerified,
     };
   }
 
