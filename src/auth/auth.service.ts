@@ -518,6 +518,7 @@ export class AuthService {
       phoneNumber: user.phoneNumber,
       company: user.company ? user.company.name : 'None', // Return "None" if no company is associated
       profilePicture, // Encoded Base64 string or null
+      isEmailVerified: user.emailVerified,
     };
   }
 
