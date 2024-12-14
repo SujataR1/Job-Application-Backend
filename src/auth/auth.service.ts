@@ -118,7 +118,7 @@ export class AuthService {
       await sendEmail(email, fullName, EmailType.TwoFA, otp);
 
       // Return a 2FA pending response
-      return res.status(200).json({
+      return res.status(302).json({
         message:
           'Two-Factor Authentication is enabled. Please check your email for the OTP to complete login.',
       });
@@ -334,9 +334,6 @@ export class AuthService {
     switch (otpType) {
       case OTPType.PasswordReset:
         emailType = EmailType.PasswordReset;
-        break;
-      case OTPType.TwoFa:
-        emailType = EmailType.TwoFA;
         break;
       case OTPType.EmailVerification:
         emailType = EmailType.EmailVerification;
