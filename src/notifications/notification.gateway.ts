@@ -7,6 +7,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Inject, forwardRef } from '@nestjs/common';
 import { NotificationService } from './notification.service';
+import { Utilities } from 'src/utils/Utilities';
 
 @WebSocketGateway({
   cors: { origin: '*' },
@@ -31,7 +32,7 @@ export class NotificationGateway
 
     if (token) {
       try {
-        const userId = await this.notificationService.decodeToken(token);
+        const userId = await Utilities.VerifyJWT(token);
 
         // Add the client's socket ID to the user's socket set
         if (!this.userSocketMap.has(userId)) {
