@@ -10,7 +10,7 @@ import { NotificationService } from './notification.service';
 import { Utilities } from 'src/utils/Utilities';
 
 @WebSocketGateway({
-  namespace: '/notification',
+  namespace: '/live-notifications',
   cors: { origin: '*' },
 })
 export class NotificationGateway
