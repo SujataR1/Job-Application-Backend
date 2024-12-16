@@ -65,7 +65,7 @@ model User {
   blockedByUsers             UserBlockList[] @relation("BlockedUsersBy")
   sentMessages               Messages[]      @relation("Sender")
   receivedMessages           Messages[]      @relation("Receiver")
-  notifications              Notifications[]
+  // notifications              Notifications[]
   jobProfile                 JobProfile?
   companiesFollowed          Companies[]     @relation("CompaniesFollowed")
   usersFollowed              User[]          @relation("UsersFollowed")
@@ -125,7 +125,7 @@ model Messages {
 model Notifications {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   content   String
   isRead    Boolean  @default(false)
