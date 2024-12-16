@@ -16,7 +16,7 @@ export class NotificationService {
     private readonly gateway: NotificationGateway,
   ) {}
 
-  private async decodeToken(token: string): Promise<string> {
+  async decodeToken(token: string): Promise<string> {
     try {
       const decoded = await Utilities.VerifyJWT(token);
       return decoded.id;
@@ -36,11 +36,13 @@ export class NotificationService {
   }
 
   async createNotification(token: string, title: string, content: string) {
+    // Create the notification in the database
     const userId = await this.decodeToken(token);
     const notification = await this.prisma.notifications.create({
       data: { userId, title, content },
     });
 
+    // Notify all active connections for this user
     this.gateway.notifyUser(userId, notification);
 
     return notification;

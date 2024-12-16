@@ -17,27 +17,36 @@ export class NotificationGateway
   @WebSocketServer()
   server: Server;
 
-  private clientTokenMap: Map<string, string> = new Map(); // Map client.id -> token
+  // Map userId -> Set of socket IDs
+  private userSocketMap: Map<string, Set<string>> = new Map();
 
   constructor(
     @Inject(forwardRef(() => NotificationService))
     private readonly notificationService: NotificationService,
   ) {}
 
+  // Handle WebSocket connection
   async handleConnection(client: Socket) {
     const token = client.handshake.query.token as string;
 
     if (token) {
-      this.clientTokenMap.set(client.id, token);
-      console.log(`Client connected with token: ${token}`);
-
       try {
+        const userId = await this.notificationService.decodeToken(token);
+
+        // Add the client's socket ID to the user's socket set
+        if (!this.userSocketMap.has(userId)) {
+          this.userSocketMap.set(userId, new Set());
+        }
+        this.userSocketMap.get(userId).add(client.id);
+
+        console.log(`User ${userId} connected with socket ID ${client.id}`);
+
+        // Fetch the most recent 50 notifications
         const notifications =
           await this.notificationService.getNotifications(token);
         client.emit('notifications', notifications);
       } catch (error) {
-        console.error('Error fetching notifications:', error.message);
-        client.emit('error', { message: 'Unauthorized or invalid token' });
+        console.error('Invalid token, disconnecting client:', error.message);
         client.disconnect();
       }
     } else {
@@ -46,16 +55,31 @@ export class NotificationGateway
     }
   }
 
+  // Handle WebSocket disconnection
   handleDisconnect(client: Socket) {
-    this.clientTokenMap.delete(client.id);
-    console.log(`Client disconnected: ${client.id}`);
+    // Remove the client's socket ID from the user's socket set
+    for (const [userId, socketSet] of this.userSocketMap.entries()) {
+      if (socketSet.has(client.id)) {
+        socketSet.delete(client.id);
+        console.log(`User ${userId} disconnected socket ID ${client.id}`);
+        if (socketSet.size === 0) {
+          this.userSocketMap.delete(userId);
+        }
+        break;
+      }
+    }
   }
 
-  notifyUser(token: string, notification: any) {
-    this.clientTokenMap.forEach((storedToken, clientId) => {
-      if (storedToken === token) {
-        this.server.to(clientId).emit('notification', notification);
+  // Notify all sockets of a user when a new notification is created
+  notifyUser(userId: string, notification: any) {
+    const socketSet = this.userSocketMap.get(userId);
+    if (socketSet) {
+      for (const socketId of socketSet) {
+        this.server.to(socketId).emit('notification', notification);
       }
-    });
+      console.log(`Notification sent to all sockets for user ${userId}`);
+    } else {
+      console.log(`No active sockets for user ${userId}`);
+    }
   }
 }
