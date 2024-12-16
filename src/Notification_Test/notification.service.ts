@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { Utilities } from '../utils/Utilities';
 import { NotificationGateway } from './notification.gateway';
@@ -31,7 +36,7 @@ export class NotificationService {
   }
 
   async createNotification(token: string, title: string, content: string) {
-    const userId = await this.decodeToken(token)
+    const userId = await this.decodeToken(token);
     const notification = await this.prisma.notifications.create({
       data: { userId, title, content },
     });
