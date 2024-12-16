@@ -1,28 +1,21 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Post, Get, Body, Headers } from '@nestjs/common';
 import { NotificationService } from './notification.service';
-import { NotificationGateway } from './notification.gateway';
 
 @Controller('notifications')
 export class NotificationController {
-  constructor(
-    private readonly notificationService: NotificationService,
-    private readonly notificationGateway: NotificationGateway,
-  ) {}
+  constructor(private readonly notificationService: NotificationService) {}
 
   @Post()
   async createNotification(
-    @Body('userId') userId: string,
+    @Headers('Authorization') token: string,
     @Body('title') title: string,
     @Body('content') content: string,
   ) {
-    const notification = await this.notificationService.createNotification(userId, title, content);
-    await this.notificationGateway.sendNotification(userId, title, content);
-    return notification;
+    return this.notificationService.createNotification(token, title, content);
   }
 
-  @Get(':userId')
-  async getUserNotifications(@Param('userId') userId: string) {
-    const notifications = await this.notificationService.getNotifications(userId);
-    return notifications;
+  @Get()
+  async getUserNotifications(@Headers('Authorization') token: string) {
+    return this.notificationService.getNotifications(token);
   }
 }

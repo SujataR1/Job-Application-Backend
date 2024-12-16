@@ -1,15 +1,15 @@
 import {
     WebSocketGateway,
+    WebSocketServer,
     OnGatewayConnection,
     OnGatewayDisconnect,
-    WebSocketServer,
     SubscribeMessage,
   } from '@nestjs/websockets';
   import { Server, Socket } from 'socket.io';
   import { NotificationService } from './notification.service';
   
   @WebSocketGateway({
-    cors: { origin: '*' }, // Adjust as per your environment
+    cors: { origin: '*' },
   })
   export class NotificationGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer()
@@ -19,11 +19,18 @@ import {
   
     constructor(private readonly notificationService: NotificationService) {}
   
-    handleConnection(client: Socket) {
-      const userId = client.handshake.query.userId as string;
-      if (userId) {
+    async handleConnection(client: Socket) {
+      try {
+        const token = client.handshake.query.token as string;
+        const decoded = await this.notificationService.getNotifications(token); // Decoded at the service level
+  
+        const userId = decoded[0]?.userId; // Get userId for active connections
         this.activeClients.set(client.id, userId);
-        console.log(`User ${userId} connected.`);
+  
+        console.log(`User ${userId} connected via WebSocket`);
+      } catch (error) {
+        console.error('Token invalid:', error.message);
+        client.disconnect();
       }
     }
   
@@ -31,23 +38,18 @@ import {
       const userId = this.activeClients.get(client.id);
       if (userId) {
         this.activeClients.delete(client.id);
-        console.log(`User ${userId} disconnected.`);
-      }
-    }
-  
-    async sendNotification(userId: string, title: string, content: string) {
-      const clientId = [...this.activeClients.entries()].find(([, id]) => id === userId)?.[0];
-      if (clientId) {
-        this.server.to(clientId).emit('notification', { title, content });
+        console.log(`User ${userId} disconnected`);
       }
     }
   
     @SubscribeMessage('fetchNotifications')
     async fetchNotifications(client: Socket) {
-      const userId = this.activeClients.get(client.id);
-      if (userId) {
-        const notifications = await this.notificationService.getNotifications(userId);
+      try {
+        const token = client.handshake.query.token as string;
+        const notifications = await this.notificationService.getNotifications(token);
         client.emit('notifications', notifications);
+      } catch (error) {
+        client.emit('error', { message: 'Unauthorized or invalid token' });
       }
     }
   }
