@@ -15,8 +15,9 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from 'prisma/prisma.module';
 import { UserSettingsModule } from './user-settings/user-settings.module';
+import { NotificationModule } from './Notification_Test/notification.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, UserSettingsModule],
+  imports: [AuthModule, PrismaModule, UserSettingsModule, NotificationModule],
 })
 export class AppModule {}
