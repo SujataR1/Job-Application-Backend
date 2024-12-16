@@ -147,6 +147,7 @@ model JobPostings {
   title          String
   description    String
   locations      Json
+  address        Json?
   skills         Json
   min_experience Float      @default(0.0)
   max_experience Float?
