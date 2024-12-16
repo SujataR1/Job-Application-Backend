@@ -32,7 +32,8 @@ export class NotificationGateway
 
     if (token) {
       try {
-        const userId = await Utilities.VerifyJWT(token);
+        const decoded = await Utilities.VerifyJWT(token);
+        const userId = decoded.id;
 
         // Add the client's socket ID to the user's socket set
         if (!this.userSocketMap.has(userId)) {
@@ -44,7 +45,7 @@ export class NotificationGateway
 
         // Fetch the most recent 50 notifications
         const notifications =
-          await this.notificationService.getNotifications(token);
+          await this.notificationService.getNotifications(userId);
         client.emit('notifications', notifications);
       } catch (error) {
         console.error('Invalid token, disconnecting client:', error.message);
