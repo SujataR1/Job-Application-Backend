@@ -16,7 +16,7 @@ export class NotificationGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
-  server: Server;
+  Notification_Server: Server;
 
   // Map userId -> Set of socket IDs
   private userSocketMap: Map<string, Set<string>> = new Map();
@@ -77,7 +77,10 @@ export class NotificationGateway
     const socketSet = this.userSocketMap.get(userId);
     if (socketSet) {
       for (const socketId of socketSet) {
-        this.server.to(socketId).emit('notification', notification);
+        this.Notification_Server.to(socketId).emit(
+          'notification',
+          notification,
+        );
       }
       console.log(`Notification sent to all sockets for user ${userId}`);
     } else {
