@@ -65,13 +65,14 @@ model User {
   blockedByUsers             UserBlockList[] @relation("BlockedUsersBy")
   sentMessages               Messages[]      @relation("Sender")
   receivedMessages           Messages[]      @relation("Receiver")
-  notifications              Notifications[]
+  // notifications              Notifications[]
   jobProfile                 JobProfile?
   companiesFollowed          Companies[]     @relation("CompaniesFollowed")
   usersFollowed              User[]          @relation("UsersFollowed")
   followers                  User[]          @relation("UsersFollowed")
   Posts                      Posts[]
   Comments                   Comments[]
+  Assessment                 Assessment[]
 }
 
 model IndustryCompany {
@@ -90,38 +91,41 @@ model Industries {
 }
 
 model Companies {
-  id             String               @id @unique @default(uuid())
-  name           String
-  description    String
-  websiteLink    String?
-  industryLinks  IndustryCompany[]
-  about          String?
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @default(now()) @updatedAt
-  usersInvolved  User[]               @relation("CompanyUsers")
-  usersFollowing User[]               @relation("CompaniesFollowed")
-  jobPostings    JobPostings[]
-  pageAdmins     User[]               @relation("CompanyAdmins")
-  analytics      CompanyAnalytics?
-  pageSettings   CompanyPageSettings?
+  id                     String                   @id @unique @default(uuid())
+  name                   String
+  description            String
+  websiteLink            String?
+  industryLinks          IndustryCompany[]
+  about                  String?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @default(now()) @updatedAt
+  usersInvolved          User[]                   @relation("CompanyUsers")
+  usersFollowing         User[]                   @relation("CompaniesFollowed")
+  jobPostings            JobPostings[]
+  pageAdmins             User[]                   @relation("CompanyAdmins")
+  analytics              CompanyAnalytics?
+  pageSettings           CompanyPageSettings?
+  CompanyPageAttachments CompanyPageAttachments[]
 }
 
 model Messages {
-  id         String   @id @default(uuid())
-  senderId   String
-  sender     User     @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiverId String
-  receiver   User     @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  content    String
-  isRead     Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
+  id                 String               @id @default(uuid())
+  senderId           String
+  sender             User                 @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId         String
+  receiver           User                 @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  content            String
+  isRead             Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @default(now()) @updatedAt
+  MessageAttachments MessageAttachments[]
+  Assessment         Assessment[]
 }
 
 model Notifications {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   content   String
   isRead    Boolean  @default(false)
@@ -143,6 +147,7 @@ model JobPostings {
   title          String
   description    String
   locations      Json
+  address        Json?
   skills         Json
   min_experience Float      @default(0.0)
   max_experience Float?
@@ -156,6 +161,7 @@ model JobPostings {
   updatedAt      DateTime   @default(now()) @updatedAt
 
   applications Application[]
+  Assessment   Assessment[]
 }
 
 model Application {
@@ -266,17 +272,17 @@ model Posts {
   attachments Post_Attachments[]
   Comments    Comments[]
 
-  originalPostId String? // Link to the original post
+  originalPostId String? 
   originalPost   Posts?  @relation("OriginalPost", fields: [originalPostId], references: [id], onDelete: SetNull)
   reposts        Posts[] @relation("OriginalPost")
-  isRepost       Boolean @default(false) // Flag to mark reposted content
+  isRepost       Boolean @default(false) 
 }
 
 model Post_Attachments {
   id             String   @id @default(uuid())
   postId         String
   post           Posts    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  attachmentPath Json // Path to the attached file
+  attachmentPath Json 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
 }
@@ -300,9 +306,53 @@ model Comments {
 
 model Comment_Attachments {
   id             String    @id @default(uuid())
-  attachmentPath Json // Path to the attached file
+  attachmentPath Json 
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @default(now()) @updatedAt
   Comments       Comments? @relation(fields: [commentsId], references: [id], onDelete: Cascade)
   commentsId     String?
+}
+
+model AssessmentAttachments {
+  id           String      @id @default(uuid())
+  assessmentId String
+  filePath     String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @default(now()) @updatedAt
+  assessment   Assessment? @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+}
+
+model CompanyPageAttachments {
+  id            String     @id @default(uuid())
+  companyPageId String
+  filePath      String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @default(now()) @updatedAt
+  companyPage   Companies? @relation(fields: [companyPageId], references: [id], onDelete: Cascade)
+}
+
+model MessageAttachments {
+  id             String   @id @default(uuid())
+  messageId      String
+  attachmentPath Json 
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  message Messages @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model Assessment {
+  id           String   @id @default(uuid())
+  jobPostingId String
+  applicantId  String
+  messageId    String
+  instructions String? 
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  jobPosting JobPostings @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  applicant  User        @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  message    Messages    @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  attachments AssessmentAttachments[]
 }
