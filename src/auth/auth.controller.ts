@@ -1,20 +1,24 @@
 import {
   Controller,
+  Get,
   Post,
   Patch,
   Delete,
-  Res,
   Body,
   Headers,
+  Res,
   UseInterceptors,
   UploadedFile,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/sign-up.dto';
-import { UpdateUserDto } from './dto/update.dto'; // Import Update DTO
+import { UpdateUserDto } from './dto/update.dto';
+import { LoginDto } from './dto/login.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { Verify2FADto } from './dto/verify-two-fa.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { RequestOtpDto } from './dto/request-otp.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { LoginDto } from './dto/login.dto'; // Import LoginDto
 import { Response } from 'express';
 import {
   ApiTags,
@@ -26,64 +30,50 @@ import {
 } from '@nestjs/swagger';
 import { Utilities } from '../utils/utilities';
 
-@ApiTags('Authentication') // Swagger tag for grouping
+@ApiTags('Authentication') // Swagger group
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // Sign-up endpoint with file upload handling
+  // Sign-up endpoint
   @Post('sign-up')
   @ApiOperation({
     summary: 'User Sign-Up',
     description:
-      'This endpoint allows a user to sign up by providing personal details and an optional profile image.',
+      'Allows a user to sign up with details and an optional profile image.',
   })
   @UseInterceptors(
     FileInterceptor('profileImage', Utilities.multerSetup('Users')),
-  ) // Interceptor for file handling
-  @ApiConsumes('multipart/form-data') // Swagger annotation for handling file uploads
+  )
+  @ApiConsumes('multipart/form-data')
   @ApiBody({
     description: 'Sign-up form data with optional profile image',
     type: SignUpDto,
   })
-  @ApiResponse({
-    status: 201,
-    description: 'User successfully signed up.',
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid input data.',
-  })
+  @ApiResponse({ status: 201, description: 'User successfully signed up.' })
+  @ApiResponse({ status: 400, description: 'Invalid input data.' })
   async signUp(
-    @Body() signUpDto: SignUpDto, // DTO for request body
-    @UploadedFile() profileImage: Express.Multer.File, // Correct type for uploaded file
+    @Body() signUpDto: SignUpDto,
+    @UploadedFile() profileImage: Express.Multer.File,
   ) {
     if (profileImage) {
-      signUpDto.profileImage = profileImage.path; // Save filename or path to DTO
+      signUpDto.profileImage = profileImage.path;
     }
-
-    return this.authService.signUp(signUpDto); // Process the sign-up logic
+    return this.authService.signUp(signUpDto);
   }
 
   // Login endpoint
   @Post('login')
   @ApiOperation({
     summary: 'User Login',
-    description:
-      'This endpoint allows a user to log in by providing email and password.',
+    description: 'Allows a user to log in with email and password.',
   })
   @ApiBody({
     description: 'Login credentials',
     type: LoginDto,
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Login successful.',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Invalid credentials.',
-  })
+  @ApiResponse({ status: 200, description: 'Login successful.' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials.' })
   async login(@Body() loginDto: LoginDto, @Res() res: Response) {
     return this.authService.login(loginDto, res);
   }
@@ -92,101 +82,224 @@ export class AuthController {
   @Post('logout')
   @ApiOperation({
     summary: 'Logout User',
-    description:
-      'Logs out the user by validating the token in the Authorization header and adding it to the blacklist to prevent further use.',
+    description: 'Logs out the user by invalidating their token.',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer token for authentication',
   })
   @ApiResponse({
     status: 200,
-    description: 'Logout successful. The token is blacklisted.',
+    description: 'Logout successful. Token blacklisted.',
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized - Invalid, expired, or blacklisted token.',
+    description: 'Unauthorized - Invalid or expired token.',
   })
-  async logout(@Headers('authorization') authorizationHeader: string) {
-    try {
-      return await this.authService.logout(authorizationHeader);
-    } catch (error) {
-      throw new UnauthorizedException(error.message);
-    }
+  async logout(@Headers('Authorization') authorizationHeader: string) {
+    return this.authService.logout(authorizationHeader);
   }
 
-  // Update User endpoint
+  // Update user information
   @Patch('update')
   @ApiOperation({
-    summary: 'Update user information',
-    description: 'Updates the user information, except passwords.',
+    summary: 'Update User Information',
+    description: 'Allows a user to update their profile information.',
   })
+  @UseInterceptors(
+    FileInterceptor('profileImage', Utilities.multerSetup('Users')),
+  )
+  @ApiConsumes('multipart/form-data')
   @ApiHeader({
     name: 'Authorization',
     description: 'Bearer token for authentication',
   })
   @ApiBody({
     description: 'Fields to update (excluding password)',
-    type: UpdateUserDto, // Specify the DTO explicitly for Swagger
+    type: UpdateUserDto,
   })
   @ApiResponse({
     status: 200,
     description: 'User information updated successfully.',
   })
-  @ApiResponse({
-    status: 400,
-    description: 'Validation error or bad input.',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid token or authentication failed.',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'User not found.',
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Internal server error.',
-  })
+  @ApiResponse({ status: 400, description: 'Invalid input data.' })
   async updateUser(
-    @Headers('authorization') authorizationHeader: string,
-
-    @Body() updateUserDto: UpdateUserDto, // DTO for fields to update
+    @Headers('Authorization') authorizationHeader: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @UploadedFile() profileImage: Express.Multer.File,
   ) {
+    if (profileImage) {
+      updateUserDto.profilePicturePath = profileImage.path;
+    }
     return this.authService.updateUser(authorizationHeader, updateUserDto);
   }
 
-  // Delete User endpoint
+  // Delete user
   @Delete('delete')
   @ApiOperation({
-    summary: 'Delete user account',
-    description:
-      'Deletes the account of a logged on the event of a succesful password verification.',
+    summary: 'Delete User Account',
+    description: 'Deletes a user account after password verification.',
   })
   @ApiHeader({
     name: 'Authorization',
     description: 'Bearer token for authentication',
   })
   @ApiBody({
-    description: 'User password for confirmation',
+    description: 'Password required for confirmation',
     schema: {
       type: 'object',
       properties: {
-        password: {
-          type: 'string',
-          example: 'userPassword123',
-        },
+        password: { type: 'string', example: 'userPassword123' },
       },
     },
   })
   @ApiResponse({
     status: 200,
-    description: 'User deleted successfully.',
+    description: 'User account deleted successfully.',
+  })
+  async deleteUser(
+    @Headers('Authorization') authorizationHeader: string,
+    @Body('password') password: string,
+  ) {
+    return this.authService.deleteUser(authorizationHeader, password);
+  }
+
+  @Post('request-otp')
+  @ApiOperation({
+    summary: 'Request OTP',
+    description:
+      'Allows a user to request OTPs for various purposes like email verification, 2FA, or password reset.',
+  })
+  @ApiBody({
+    description: 'Details for requesting an OTP',
+    type: RequestOtpDto,
   })
   @ApiResponse({
-    status: 400,
-    description: 'Validation error or bad input.',
+    status: 200,
+    description: 'OTP sent successfully.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found.',
+  })
+  async requestOtp(@Body() requestOtpDto: RequestOtpDto) {
+    const { email, otpType } = requestOtpDto; // Extract email and OTP type from the request body
+    const message = await this.authService.requestOTP(email, otpType); // Call the service to generate and send OTP
+    return { message };
+  }
+
+  @Post('verify-email-otp')
+  @ApiOperation({
+    summary: 'Verify Email OTP',
+    description:
+      'Validates an email verification OTP, updates emailVerified using Authorization header.',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer token for authentication',
+  })
+  @ApiBody({
+    description: 'OTP for email verification',
+    type: VerifyEmailDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Email successfully verified.',
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized - Invalid token or incorrect password.',
+    description: 'Invalid or expired OTP.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found.',
+  })
+  async verifyEmailOTP(
+    @Headers('Authorization') authorizationHeader: string,
+    @Body() verifyEmailDto: VerifyEmailDto,
+  ) {
+    const { otp } = verifyEmailDto; // Extract OTP from the request body
+    return this.authService.verifyEmailOTP(authorizationHeader, otp); // Pass the Authorization header and OTP to the service
+  }
+
+  // Verify 2FA OTP
+  @Post('verify-2fa-otp')
+  @ApiOperation({
+    summary: 'Verify 2FA OTP',
+    description:
+      'Validates the OTP sent for Two-Factor Authentication (2FA) based on the email provided.',
+  })
+  @ApiBody({
+    description: '2FA OTP verification details',
+    type: Verify2FADto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '2FA OTP verified successfully. User logged in.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or expired OTP.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found.',
+  })
+  async verifyTwoFa(@Body() verify2FADto: Verify2FADto, @Res() res: Response) {
+    const { email, otp } = verify2FADto;
+    return this.authService.verifyTwoFaOTP(email, otp, res);
+  }
+
+  // Reset password
+  @Post('reset-password')
+  @ApiOperation({
+    summary: 'Reset Password',
+    description: 'Allows resetting a user password using OTP.',
+  })
+  @ApiBody({
+    description: 'Password reset details',
+    type: ResetPasswordDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password successfully reset.',
+  })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    const { email, otp, newPassword } = resetPasswordDto;
+    return this.authService.verifyPasswordResetOTP(email, newPassword, otp);
+  }
+
+  @Patch('change-password')
+  @ApiOperation({
+    summary: 'Change Password',
+    description: 'Allows the user to change their password.',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer token for authentication',
+    required: true,
+  })
+  @ApiBody({
+    description: 'Change password details',
+    schema: {
+      type: 'object',
+      properties: {
+        oldPassword: { type: 'string', example: 'oldPassword123' },
+        newPassword: { type: 'string', example: 'newPassword456' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password changed successfully.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid token or incorrect old password.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid input or same new password.',
   })
   @ApiResponse({
     status: 404,
@@ -194,12 +307,86 @@ export class AuthController {
   })
   @ApiResponse({
     status: 500,
-    description: 'Internal server error.',
+    description: 'Internal Server Error.',
   })
-  async deleteUser(
+  async changePassword(
     @Headers('Authorization') authorizationHeader: string,
-    @Body('password') password: string, // Password confirmation
+    @Body('oldPassword') oldPassword: string,
+    @Body('newPassword') newPassword: string,
   ) {
-    return this.authService.deleteUser(authorizationHeader, password);
+    return this.authService.changePassword(
+      authorizationHeader,
+      oldPassword,
+      newPassword,
+    );
+  }
+
+  @Post('toggle-2fa')
+  @ApiOperation({
+    summary: 'Toggle Two-Factor Authentication',
+    description:
+      'Enables or disables Two-Factor Authentication (2FA) for the authenticated user. The user must have a verified email to enable 2FA.',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer token for authentication',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '2FA toggled successfully. Returns the current 2FA status.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Email not verified or invalid token.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found.',
+  })
+  async toggle2FA(@Headers('Authorization') authorizationHeader: string) {
+    return this.authService.toggle2FA(authorizationHeader);
+  }
+
+  @Get('user-details')
+  @ApiOperation({
+    summary: 'Get User Details',
+    description:
+      'Fetch user details based on the provided authorization token.',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer token for authentication',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns user details, including profile picture encoded in Base64.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found.',
+  })
+  async getUserDetails(@Headers('Authorization') authorizationHeader: string) {
+    return this.authService.getUserDetails(authorizationHeader);
+  }
+
+  @Get('profile-picture')
+  @ApiOperation({ summary: 'Get user profile picture' })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile picture retrieved successfully.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'User not found.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Failed to retrieve profile picture.',
+  })
+  async getUserProfilePicture(@Headers('Authorization') authorization: string) {
+    return this.authService.getUserProfilePicture(authorization);
   }
 }

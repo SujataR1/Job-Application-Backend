@@ -27,9 +27,11 @@ async function bootstrap() {
 
   // Enable CORS for the frontend
   app.enableCors({
-    origin: 'http://localhost:3000', // Allow requests from this origin
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true, // Allow cookies to be sent across domains
+    origin: '*', // Allow all origins
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Allow all HTTP methods
+    allowedHeaders: '*', // Allow all headers
+    exposedHeaders: 'Authorization, User_Type',
+    credentials: true, // Disable credentials
   });
 
   await app.listen(7000); // Start the NestJS app on port 7000

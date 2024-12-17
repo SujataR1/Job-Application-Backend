@@ -4,6 +4,7 @@ import {
   ConflictException,
   NotFoundException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { SignUpDto } from './dto/sign-up.dto';
@@ -13,6 +14,9 @@ import { Response } from 'express';
 import { Utilities } from '../utils/Utilities';
 import * as bcrypt from 'bcrypt';
 import { UpdateUserDto } from './dto/update.dto';
+import { OTPType } from '@prisma/client';
+import { randomBytes } from 'crypto';
+import { EmailType, sendEmail } from 'src/comms/methods';
 
 @Injectable()
 export class AuthService {
@@ -58,7 +62,7 @@ export class AuthService {
       }
     }
 
-    // Hash the password before storing it
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create the user in the database
@@ -72,7 +76,7 @@ export class AuthService {
         lookingToApply,
         lookingToRecruit,
         about,
-        profilePicturePath: profileImage, // Store the file path or URL here
+        profilePicturePath: profileImage || null, // Store the file path or URL here
       },
     });
 
@@ -102,6 +106,24 @@ export class AuthService {
       throw new UnauthorizedException('Please check the entered credentials');
     }
 
+    // Check if two-factor authentication is enabled
+    if (user.twoFaEnabled) {
+      // Generate and send OTP for 2FA
+      const otp = await this.generateOTP(email, OTPType.TwoFa);
+
+      // Fetch user full name for email personalization
+      const fullName = user.fullName;
+
+      // Send 2FA email
+      await sendEmail(email, fullName, EmailType.TwoFA, otp);
+
+      // Return a 2FA pending response
+      return res.status(307).json({
+        message:
+          'Two-Factor Authentication is enabled. Please check your email for the OTP to complete login.',
+      });
+    }
+
     // Generate the JWT token
     const payload = { id: user.id }; // Encode the user ID in the JWT payload
     const token = this.jwtService.sign(payload);
@@ -109,8 +131,9 @@ export class AuthService {
     // Encrypt the token
     const encryptedToken = Utilities.encryptToken(token);
 
-    // Set the encrypted token in the Authorization header
+    // Set the encrypted token and the user type in the appropriate headers
     res.setHeader('Authorization', `Bearer ${encryptedToken}`);
+    res.setHeader('User_Type', `${user.userType}`);
 
     // Send the response
     return res.status(200).json({
@@ -163,9 +186,9 @@ export class AuthService {
         );
       }
 
-      // If the email is being changed, add email and emailVerified to allowedUpdates
       allowedUpdates['email'] = email; // Explicitly add email
       allowedUpdates['emailVerified'] = false; // Explicitly add emailVerified
+      allowedUpdates['twoFaEnabled'] = false; // Explicitly add twoFaEnabled
     }
 
     try {
@@ -177,7 +200,6 @@ export class AuthService {
 
       return {
         message: 'User information updated successfully',
-        updatedFields: allowedUpdates,
       };
     } catch (error) {
       throw new InternalServerErrorException(
@@ -221,4 +243,379 @@ export class AuthService {
       );
     }
   }
+
+  private async generateOTP(email: string, otpType: OTPType): Promise<string> {
+    // Find the user by email
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      throw new NotFoundException(
+        'An user with this email does not exist in our records.',
+      );
+    }
+
+    // Ensure no duplicate OTPs exist for the same user and type
+    await this.prisma.oTP.deleteMany({
+      where: {
+        userId: user.id,
+        otpType,
+      },
+    });
+
+    // Generate a random OTP
+    const otp = randomBytes(3).toString('hex').toUpperCase(); // 6-character OTP
+
+    // Define OTP expiry time (e.g., 10 minutes from now)
+    const expiry = new Date();
+    expiry.setMinutes(expiry.getMinutes() + 10);
+
+    // Store the OTP in the database
+    await this.prisma.oTP.create({
+      data: {
+        otp,
+        otpType,
+        userId: user.id,
+        expiry,
+      },
+    });
+
+    return otp; // Return the OTP for use in communications (e.g., email, SMS)
+  }
+
+  private async validateOTP(
+    email: string,
+    otp: string,
+    otpType: OTPType,
+  ): Promise<boolean> {
+    // Find the user by email
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      throw new NotFoundException('User with this email does not exist.');
+    }
+
+    // Find the OTP record
+    const otpRecord = await this.prisma.oTP.findFirst({
+      where: {
+        userId: user.id,
+        otp,
+        otpType,
+      },
+    });
+
+    if (!otpRecord) {
+      throw new NotFoundException(
+        'The OTP enetered did not match any in our records. Please Try Again',
+      );
+    }
+
+    // Check if the OTP has expired
+    const now = new Date();
+    if (otpRecord.expiry < now) {
+      // Delete expired OTP
+      await this.prisma.oTP.delete({ where: { otp } });
+      throw new UnauthorizedException('OTP has expired.');
+    }
+
+    // OTP is valid; delete it
+    await this.prisma.oTP.delete({ where: { otp } });
+
+    return true; // Return true if OTP is valid
+  }
+
+  async requestOTP(email: string, otpType: OTPType): Promise<string> {
+    // Call the existing generateOTP method
+    const otp = await this.generateOTP(email, otpType);
+
+    // Determine the email type for sending the OTP
+    let emailType: EmailType;
+    switch (otpType) {
+      case OTPType.PasswordReset:
+        emailType = EmailType.PasswordReset;
+        break;
+      case OTPType.EmailVerification:
+        emailType = EmailType.EmailVerification;
+        break;
+      default:
+        throw new Error('Invalid OTP type provided');
+    }
+
+    // Fetch user information for the email
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new NotFoundException('User with this email does not exist.');
+    }
+
+    // Send the OTP via email
+    await sendEmail(user.email, user.fullName, emailType, otp);
+
+    return `'message': 'OTP has been sent successfully!'`;
+  }
+
+  async verifyEmailOTP(authorizationHeader: string, otp: string) {
+    // Verify the JWT and extract user ID
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+    const userId = decoded.id; // Extract userId from the token payload
+
+    // Fetch the user by ID
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // Validate the OTP for EmailVerification type
+    const isValid = await this.validateOTP(
+      user.email,
+      otp,
+      OTPType.EmailVerification,
+    );
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid or expired OTP.');
+    }
+
+    // Update the emailVerified field for the user
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { emailVerified: true },
+    });
+
+    return { message: 'Email has been successfully verified!' };
+  }
+
+  async verifyTwoFaOTP(email: string, otp: string, res: Response) {
+    // Validate the OTP for Two-Factor Authentication
+    const isValid = await this.validateOTP(email, otp, OTPType.TwoFa);
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid or expired OTP.');
+    }
+
+    // Fetch the user by email
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // Generate the JWT token
+    const payload = { id: user.id }; // Encode the user ID in the JWT payload
+    const token = this.jwtService.sign(payload);
+
+    // Encrypt the token
+    const encryptedToken = Utilities.encryptToken(token);
+
+    // Set the encrypted token and the user type in the appropriate headers
+    res.setHeader('Authorization', `Bearer ${encryptedToken}`);
+    res.setHeader('User_Type', `${user.userType}`);
+
+    return res.status(200).json({
+      message: 'You have successfully logged in!',
+    });
+  }
+
+  async toggle2FA(authorizationHeader: string) {
+    // Verify the JWT and extract user ID
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+    const userId = decoded.id; // Extract userId from the token payload
+
+    // Fetch the user by ID
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // Check if the user's email is verified
+    if (!user.emailVerified) {
+      throw new UnauthorizedException(
+        'Two-Factor Authentication can only be toggled if your email is verified.',
+      );
+    }
+
+    // Toggle the 2FA status
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFaEnabled: !user.twoFaEnabled },
+    });
+
+    // Return a success message
+    if (updatedUser.twoFaEnabled) {
+      return { message: 'Two-Factor Authentication has been enabled.' };
+    } else {
+      return { message: 'Two-Factor Authentication has been disabled.' };
+    }
+  }
+
+  async verifyPasswordResetOTP(
+    email: string,
+    newPassword: string,
+    otp: string,
+  ) {
+    // Validate the OTP for PasswordReset type
+    const isValid = await this.validateOTP(email, otp, OTPType.PasswordReset);
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid or expired OTP.');
+    }
+
+    // Fetch the user by email
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password in the database
+    await this.prisma.user.update({
+      where: { email },
+      data: { password: hashedPassword },
+    });
+
+    return '{"message":"Your password has been successfully reset."}';
+  }
+
+  async getUserDetails(authorizationHeader: string) {
+    // Extract and validate the JWT token
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+    const userId = decoded.id;
+
+    // Fetch user details from the database
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { company: true }, // Assuming a company relation exists
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // Encode profile picture to Base64 with MIME type if it exists
+    let profilePicture = null;
+    if (user.profilePicturePath) {
+      try {
+        profilePicture = await Utilities.encodeFileToBase64(
+          user.profilePicturePath,
+        );
+      } catch (error) {
+        console.error('Error encoding profile picture:', error);
+        // Profile picture issues are logged but do not block the response
+      }
+    }
+
+    // Return user details
+    return {
+      fullName: user.fullName,
+      email: user.email,
+      isEmailVerified: user.emailVerified,
+      about: user.about,
+      phoneNumber: user.phoneNumber,
+      company: user.company ? user.company.name : 'None', // Return "None" if no company is associated
+      profilePicture, // Encoded Base64 string or null
+    };
+  }
+
+  async getUserProfilePicture(authorization: string) {
+    const decoded = await Utilities.VerifyJWT(authorization); // Verify JWT and extract user ID
+    const userId = decoded.id;
+
+    // Fetch the user's profile picture path
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { profilePicturePath: true }, // Only fetch the profilePicturePath
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found.');
+    }
+
+    // Return null if no profile picture is set
+    if (!user.profilePicturePath) {
+      return null;
+    }
+
+    // Convert the profile picture to Base64
+    try {
+      const base64Image = await Utilities.encodeFileToBase64(
+        user.profilePicturePath,
+      );
+      return { profilePicture: base64Image };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to retrieve profile picture.',
+      );
+    }
+  }
+
+  async changePassword(
+    authorizationHeader: string,
+    oldPassword: string,
+    newPassword: string,
+  ) {
+    // Validate the JWT token and extract user ID
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+    const userId = decoded.id; // Extract user ID from the token payload
+
+    // Fetch the user by ID
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // Verify the old password
+    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isOldPasswordValid) {
+      throw new UnauthorizedException('Incorrect old password.');
+    }
+
+    // Check if the new password is the same as the old password
+    const isNewPasswordSame = await bcrypt.compare(newPassword, user.password);
+    if (isNewPasswordSame) {
+      throw new BadRequestException(
+        'The new password cannot be the same as the old password.',
+      );
+    }
+
+    // Hash the new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password in the database
+    try {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedNewPassword },
+      });
+
+      return { message: 'Password has been successfully changed.' };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to change password. Please try again later.',
+      );
+    }
+  }
 }
+
+
+
+// app.post('/auth/login', async (req, res) => {
+//   try {
+//       const user = await authenticateUser(req.body.email, req.body.password);
+//       if (user) {
+//           const token = generateToken(user); // Generate your JWT token
+//           res.status(200).json({
+//               message: 'You have successfully logged in!',
+//               user_type: user.userType, // Ensure this is populated
+//               authorization: token, // Ensure this is generated
+//           });
+//       } else {
+//           res.status(401).json({ message: 'Invalid email or password' });
+//       }
+//   } catch (error) {
+//       res.status(500).json({ message: 'Internal server error' });
+//   }
+// });

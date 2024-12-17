@@ -14,16 +14,10 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from 'prisma/prisma.module';
-import { JwtModule } from '@nestjs/jwt';
+import { UserSettingsModule } from './user-settings/user-settings.module';
+import { NotificationModule } from './Notification_Test/notification.module';
 
 @Module({
-  imports: [
-    AuthModule,
-    PrismaModule,
-    JwtModule.register({
-      secret: 'your-secret-key', // Use environment variables for production
-      signOptions: { expiresIn: '1h' },
-    }),
-  ],
+  imports: [AuthModule, PrismaModule, UserSettingsModule, NotificationModule],
 })
 export class AppModule {}
