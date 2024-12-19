@@ -27,7 +27,6 @@ import { GetUserPostsFiltersDto } from './dto/get-user-posts-filtered.dto';
 import { RepostDto } from './dto/create-reposts.dto';
 import { PostsService } from './posts.service';
 import * as multer from 'multer';
-import { PostVisibilityEnum } from '@prisma/client';
 
 @ApiTags('Posts')
 @Controller('posts')
