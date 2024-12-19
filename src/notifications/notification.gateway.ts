@@ -10,13 +10,14 @@ import { NotificationService } from './notification.service';
 import { Utilities } from 'src/utils/Utilities';
 
 @WebSocketGateway({
+  namespace: '/live-notifications',
   cors: { origin: '*' },
 })
 export class NotificationGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
-  server: Server;
+  Notification_Server: Server;
 
   // Map userId -> Set of socket IDs
   private userSocketMap: Map<string, Set<string>> = new Map();
@@ -33,7 +34,7 @@ export class NotificationGateway
     if (token) {
       try {
         const decoded = await Utilities.VerifyJWT(token);
-        const userId = decoded.id
+        const userId = decoded.id;
 
         // Add the client's socket ID to the user's socket set
         if (!this.userSocketMap.has(userId)) {
@@ -77,7 +78,10 @@ export class NotificationGateway
     const socketSet = this.userSocketMap.get(userId);
     if (socketSet) {
       for (const socketId of socketSet) {
-        this.server.to(socketId).emit('notification', notification);
+        this.Notification_Server.to(socketId).emit(
+          'notification',
+          notification,
+        );
       }
       console.log(`Notification sent to all sockets for user ${userId}`);
     } else {
