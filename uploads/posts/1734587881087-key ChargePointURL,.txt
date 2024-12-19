@@ -1,0 +1,3 @@
+"key": "ChargePointURL",
+            "readonly": false,
+            "value": "ws://192.168.0.242:5000/vctjtc/240100327"
