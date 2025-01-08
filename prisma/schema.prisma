@@ -145,6 +145,7 @@ model UserBlockList {
 model JobPostings {
   id             String     @id @default(uuid())
   title          String
+  summary        String?
   description    String
   locations      Json
   address        Json?
