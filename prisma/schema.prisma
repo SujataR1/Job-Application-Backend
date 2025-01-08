@@ -149,6 +149,7 @@ model JobPostings {
   locations      Json
   address        Json?
   skills         Json
+  requirements   Json?
   min_experience Float      @default(0.0)
   max_experience Float?
   min_salary     Float?
@@ -272,19 +273,19 @@ model Posts {
   attachments Post_Attachments[]
   Comments    Comments[]
 
-  originalPostId String? 
+  originalPostId String?
   originalPost   Posts?  @relation("OriginalPost", fields: [originalPostId], references: [id], onDelete: SetNull)
   allowSharing   Boolean @default(true)
   allowReposts   Boolean @default(false)
   reposts        Posts[] @relation("OriginalPost")
-  isRepost       Boolean @default(false) 
+  isRepost       Boolean @default(false)
 }
 
 model Post_Attachments {
   id             String   @id @default(uuid())
   postId         String
   post           Posts    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  attachmentPath Json 
+  attachmentPath Json
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
 }
@@ -308,7 +309,7 @@ model Comments {
 
 model Comment_Attachments {
   id             String    @id @default(uuid())
-  attachmentPath Json 
+  attachmentPath Json
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @default(now()) @updatedAt
   Comments       Comments? @relation(fields: [commentsId], references: [id], onDelete: Cascade)
@@ -336,7 +337,7 @@ model CompanyPageAttachments {
 model MessageAttachments {
   id             String   @id @default(uuid())
   messageId      String
-  attachmentPath Json 
+  attachmentPath Json
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
 
@@ -348,7 +349,7 @@ model Assessment {
   jobPostingId String
   applicantId  String
   messageId    String
-  instructions String? 
+  instructions String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now()) @updatedAt
 
