@@ -17,6 +17,7 @@ import { PrismaModule } from 'prisma/prisma.module';
 import { UserSettingsModule } from './user-settings/user-settings.module';
 import { NotificationModule } from './notifications/notification.module';
 import { PostsModule } from './posts/posts.module';
+import { JobPostsModule } from './JobPosts/JobPosts.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { PostsModule } from './posts/posts.module';
     UserSettingsModule,
     NotificationModule,
     PostsModule,
+    JobPostsModule,
   ],
 })
 export class AppModule {}

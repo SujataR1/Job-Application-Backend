@@ -58,6 +58,8 @@ model User {
   companyId                  String?
   companyPageAdmin           Companies[]     @relation("CompanyAdmins")
   jobPoster                  JobPostings[]   @relation("JobPoster")
+  companiesJobPostingAllowed Companies[]     @relation("JobPostingPermissions")
+  jobPostUpdater             JobPostings[]   @relation("JobPostUpdater")
   applications               Application[]
   friendsInitiator           Friends[]       @relation("FriendsInitiator")
   friendsReceiver            Friends[]       @relation("FriendsReceiver")
@@ -106,6 +108,7 @@ model Companies {
   analytics              CompanyAnalytics?
   pageSettings           CompanyPageSettings?
   CompanyPageAttachments CompanyPageAttachments[]
+  usersAllowedJobPosting User[]                   @relation("JobPostingPermissions")
 }
 
 model Messages {
@@ -159,6 +162,8 @@ model JobPostings {
   company        Companies? @relation(fields: [companyId], references: [id], onDelete: Cascade)
   posterId       String?
   poster         User?      @relation("JobPoster", fields: [posterId], references: [id], onDelete: Cascade)
+  updater        User?      @relation("JobPostUpdater", fields: [updaterId], references: [id], onDelete: Cascade)
+  updaterId      String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @default(now()) @updatedAt
 
