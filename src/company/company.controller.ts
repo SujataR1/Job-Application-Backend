@@ -6,6 +6,9 @@ import {
   Param,
   Body,
   Headers,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,9 +17,11 @@ import {
   ApiParam,
   ApiBody,
   ApiResponse,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { CompanyService } from './company.service';
 import { IndustryDto } from './dto/industry.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Companies')
 @Controller('companies')
@@ -342,5 +347,77 @@ export class CompaniesController {
       userId,
       authorizationHeader,
     );
+  }
+
+  @Post(':id/logo')
+  @ApiOperation({ summary: 'Upload a company logo (Admin only)' })
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', description: 'Unique identifier of the company' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Upload company logo file (PNG, JPG, or JPEG only)',
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Company logo uploaded successfully.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file format or other validation errors.',
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadCompanyLogo(
+    @Param('id') companyId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Headers('Authorization') authorizationHeader: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException(
+        'Invalid file format. Only .png, .jpg, and .jpeg formats are allowed.',
+      );
+    }
+    return this.companiesService.uploadCompanyLogo(
+      companyId,
+      file,
+      authorizationHeader,
+    );
+  }
+
+  // Get Company Logo
+  @Get(':id/logo')
+  @ApiOperation({ summary: 'Retrieve the company logo' })
+  @ApiParam({ name: 'id', description: 'Unique identifier of the company' })
+  @ApiResponse({
+    status: 200,
+    description: 'Company logo retrieved successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Company logo retrieved successfully.',
+        },
+        companyLogo: {
+          type: 'string',
+          example: '/uploads/logos/167648888-logo.png',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Company logo not found.',
+  })
+  async getCompanyLogo(@Param('id') companyId: string) {
+    return this.companiesService.getCompanyLogo(companyId);
   }
 }

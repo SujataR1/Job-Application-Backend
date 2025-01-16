@@ -111,6 +111,7 @@ model Companies {
   CompanyPageAttachments CompanyPageAttachments[]
   usersAllowedJobPosting User[]                   @relation("JobPostingPermissions")
   OTP                    OTP[]
+  companyLogo            String?
 }
 
 model Messages {

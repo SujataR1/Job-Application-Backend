@@ -10,6 +10,8 @@ import { Utilities } from 'src/utils/Utilities';
 import { EmailType, sendEmail } from 'src/comms/methods';
 import { OTPType } from '@prisma/client';
 import { randomBytes } from 'crypto';
+import multer from 'multer';
+import path from 'path';
 
 @Injectable()
 export class CompanyService {
@@ -632,6 +634,90 @@ export class CompanyService {
 
     return {
       message: `Association between Industry "${industryName}" and Company "${companyName}" has been successfully removed.`,
+    };
+  }
+
+  // Multer setup for file upload
+  private readonly upload = multer({
+    storage: multer.diskStorage({
+      destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, '../../uploads/logos');
+        cb(null, uploadDir);
+      },
+      filename: (req, file, cb) => {
+        const uniqueName = `${Date.now()}-${file.originalname}`;
+        cb(null, uniqueName);
+      },
+    }),
+    fileFilter: (req, file, cb) => {
+      const fileExt = path.extname(file.originalname).toLowerCase();
+      if (['.png', '.jpg', '.jpeg'].includes(fileExt)) {
+        cb(null, true); // Accept the file
+      } else {
+        // Reject the file with an error
+        cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE', file.fieldname));
+      }
+    },
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
+  });
+
+  // Method to upload the logo
+  async uploadCompanyLogo(
+    companyId: string,
+    file: Express.Multer.File,
+    authorizationHeader: string,
+  ) {
+    // Step 1: Verify if the user is an admin of the company
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+
+    if (!decoded) {
+      throw new BadRequestException(
+        'Invalid or expired token. Please login again.',
+      );
+    }
+
+    const { userId } = decoded;
+
+    const company = await this.prisma.companies.findFirst({
+      where: { id: companyId, pageAdmins: { some: { id: userId } } },
+    });
+
+    if (!company) {
+      throw new ForbiddenException(
+        'You do not have permission to upload the logo for this company.',
+      );
+    }
+
+    // Step 2: Validate the file
+    if (!file) {
+      throw new BadRequestException('File must be provided.');
+    }
+
+    const filePath = `/uploads/logos/${file.filename}`; // Relative path to the logo
+
+    // Step 3: Update the company with the logo path
+    await this.prisma.companies.update({
+      where: { id: companyId },
+      data: { companyLogo: filePath },
+    });
+
+    return { message: 'Company logo uploaded successfully.', filePath };
+  }
+
+  // Method to retrieve the company logo
+  async getCompanyLogo(companyId: string) {
+    const company = await this.prisma.companies.findUnique({
+      where: { id: companyId },
+      select: { companyLogo: true },
+    });
+
+    if (!company || !company.companyLogo) {
+      throw new NotFoundException('Company logo not found.');
+    }
+
+    return {
+      message: 'Company logo retrieved successfully.',
+      companyLogo: company.companyLogo,
     };
   }
 }

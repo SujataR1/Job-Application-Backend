@@ -5,6 +5,7 @@ import { UserSettingsModule } from './user-settings/user-settings.module';
 import { NotificationModule } from './notifications/notification.module';
 import { PostsModule } from './posts/posts.module';
 import { JobPostsModule } from './JobPosts/JobPosts.module';
+import { CompaniesModule } from './company/company.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { JobPostsModule } from './JobPosts/JobPosts.module';
     UserSettingsModule,
     NotificationModule,
     PostsModule,
+    CompaniesModule,
     JobPostsModule,
   ],
 })
