@@ -10,8 +10,8 @@ import { Utilities } from 'src/utils/Utilities';
 import { EmailType, sendEmail } from 'src/comms/methods';
 import { OTPType } from '@prisma/client';
 import { randomBytes } from 'crypto';
-import multer from 'multer';
-import path from 'path';
+import * as multer from 'multer';
+import * as path from 'path';
 
 @Injectable()
 export class CompanyService {
