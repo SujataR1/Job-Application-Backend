@@ -524,4 +524,107 @@ export class CompanyService {
       company,
     };
   }
+
+  async addIndustryToCompany(
+    industryName: string,
+    companyName: string,
+    authorizationHeader: string,
+  ) {
+    // Step 1: Verify the user identity
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+  
+    if (!decoded) {
+      throw new BadRequestException('Invalid or expired token. Please login again.');
+    }
+  
+    const { userId } = decoded;
+  
+    // Step 2: Find the company by name and check admin access
+    const company = await this.prisma.companies.findFirst({
+      where: { name: companyName, pageAdmins: { some: { id: userId } } },
+    });
+  
+    if (!company) {
+      throw new ForbiddenException(
+        `You do not have permission to add an industry to the company "${companyName}".`,
+      );
+    }
+  
+    // Step 3: Find the industry by name
+    const industry = await this.prisma.industries.findUnique({
+      where: { name: industryName },
+    });
+  
+    if (!industry) {
+      throw new NotFoundException(`Industry with name "${industryName}" not found.`);
+    }
+  
+    // Step 4: Create the association in IndustryCompany
+    await this.prisma.industryCompany.create({
+      data: {
+        industryId: industry.id,
+        companyId: company.id,
+      },
+    });
+  
+    return {
+      message: `Industry "${industryName}" has been successfully associated with Company "${companyName}".`,
+    };
+  }
+  
+
+  async removeIndustryFromCompany(
+    industryName: string,
+    companyName: string,
+    authorizationHeader: string,
+  ) {
+    // Step 1: Verify the user identity
+    const decoded = await Utilities.VerifyJWT(authorizationHeader);
+  
+    if (!decoded) {
+      throw new BadRequestException('Invalid or expired token. Please login again.');
+    }
+  
+    const { userId } = decoded;
+  
+    // Step 2: Find the company by name and check admin access
+    const company = await this.prisma.companies.findFirst({
+      where: { name: companyName, pageAdmins: { some: { id: userId } } },
+    });
+  
+    if (!company) {
+      throw new ForbiddenException(
+        `You do not have permission to remove an industry from the company "${companyName}".`,
+      );
+    }
+  
+    // Step 3: Find the industry by name
+    const industry = await this.prisma.industries.findUnique({
+      where: { name: industryName },
+    });
+  
+    if (!industry) {
+      throw new NotFoundException(`Industry with name "${industryName}" not found.`);
+    }
+  
+    // Step 4: Delete the association in IndustryCompany
+    const deleted = await this.prisma.industryCompany.delete({
+      where: {
+        industryId_companyId: {
+          industryId: industry.id,
+          companyId: company.id,
+        },
+      },
+    });
+  
+    if (!deleted) {
+      throw new NotFoundException(
+        `Association between Industry "${industryName}" and Company "${companyName}" not found.`,
+      );
+    }
+  
+    return {
+      message: `Association between Industry "${industryName}" and Company "${companyName}" has been successfully removed.`,
+    };
+  }  
 }
