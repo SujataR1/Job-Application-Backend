@@ -25,6 +25,7 @@ enum OTPType {
   TwoFa
   PasswordReset
   EmailVerification
+  CompanyInvitation
 }
 
 enum FriendRequestStatusType {
@@ -94,7 +95,7 @@ model Industries {
 
 model Companies {
   id                     String                   @id @unique @default(uuid())
-  name                   String
+  name                   String                   @unique
   description            String
   websiteLink            String?
   industryLinks          IndustryCompany[]
@@ -109,6 +110,7 @@ model Companies {
   pageSettings           CompanyPageSettings?
   CompanyPageAttachments CompanyPageAttachments[]
   usersAllowedJobPosting User[]                   @relation("JobPostingPermissions")
+  OTP                    OTP[]
 }
 
 model Messages {
@@ -184,14 +186,17 @@ model Application {
 }
 
 model OTP {
-  otp       String   @id @unique
+  otp       String     @id @unique
   otpType   OTPType
-  createdAt DateTime @default(now())
+  createdAt DateTime   @default(now())
   expiry    DateTime
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String? // Optional in case OTPs are not always linked to a company
+  company   Companies? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([userId, otpType, expiry])
+  @@index([companyId])
 }
 
 model Blacklisted_Tokens {

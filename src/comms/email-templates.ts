@@ -45,3 +45,23 @@ export const emailVerificationTemplate = (userName: string, otp: string) => `
 </body>
 </html>
 `;
+
+export const companyInvitationTemplate = (
+  userName: string,
+  companyName: string,
+  otp: string,
+) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Company Invitation</title>
+</head>
+<body>
+    <h2>Hello ${userName},</h2>
+    <p>You have been invited to join the company <b>${companyName}</b>. Use the OTP below to accept the invitation:</p>
+    <h3>${otp}</h3>
+    <p>This OTP is valid for the next 10 minutes. If you didn’t expect this invitation, you can safely ignore this email.</p>
+    <p>Thank you,<br>Your Application Team</p>
+</body>
+</html>
+`;
