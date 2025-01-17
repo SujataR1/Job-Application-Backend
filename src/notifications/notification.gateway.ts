@@ -7,15 +7,17 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Inject, forwardRef } from '@nestjs/common';
 import { NotificationService } from './notification.service';
+import { Utilities } from 'src/utils/Utilities';
 
 @WebSocketGateway({
+  namespace: '/live-notifications',
   cors: { origin: '*' },
 })
 export class NotificationGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
-  server: Server;
+  Notification_Server: Server;
 
   // Map userId -> Set of socket IDs
   private userSocketMap: Map<string, Set<string>> = new Map();
@@ -31,7 +33,8 @@ export class NotificationGateway
 
     if (token) {
       try {
-        const userId = await this.notificationService.decodeToken(token);
+        const decoded = await Utilities.VerifyJWT(token);
+        const userId = decoded.id;
 
         // Add the client's socket ID to the user's socket set
         if (!this.userSocketMap.has(userId)) {
@@ -43,7 +46,7 @@ export class NotificationGateway
 
         // Fetch the most recent 50 notifications
         const notifications =
-          await this.notificationService.getNotifications(token);
+          await this.notificationService.getNotifications(userId);
         client.emit('notifications', notifications);
       } catch (error) {
         console.error('Invalid token, disconnecting client:', error.message);
@@ -75,7 +78,10 @@ export class NotificationGateway
     const socketSet = this.userSocketMap.get(userId);
     if (socketSet) {
       for (const socketId of socketSet) {
-        this.server.to(socketId).emit('notification', notification);
+        this.Notification_Server.to(socketId).emit(
+          'notification',
+          notification,
+        );
       }
       console.log(`Notification sent to all sockets for user ${userId}`);
     } else {
