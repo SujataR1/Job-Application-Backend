@@ -3,12 +3,14 @@ import {
   passwordResetTemplate,
   twoFaTemplate,
   emailVerificationTemplate,
+  companyInvitationTemplate,
 } from './email-templates';
 
 export enum EmailType {
   PasswordReset = 'PasswordReset',
   TwoFA = 'TwoFA',
   EmailVerification = 'EmailVerification',
+  CompanyInvitation = 'CompanyInvitation',
 }
 
 export const sendEmail = async (
@@ -16,6 +18,7 @@ export const sendEmail = async (
   userName: string,
   type: EmailType,
   otp: string,
+  companyName?: string,
 ) => {
   let subject: string;
   let html: string;
@@ -35,6 +38,11 @@ export const sendEmail = async (
     case EmailType.EmailVerification:
       subject = 'Verify Your Email Address';
       html = emailVerificationTemplate(userName, otp);
+      break;
+
+    case EmailType.CompanyInvitation: // New case for Company Invitation
+      subject = 'You Are Invited to Join a Company';
+      html = companyInvitationTemplate(userName, companyName, otp); // Replace <Company Name> dynamically
       break;
 
     default:

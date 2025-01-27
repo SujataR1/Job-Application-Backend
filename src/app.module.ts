@@ -1,23 +1,21 @@
-// import { Module } from '@nestjs/common';
-// import { AppController } from './app.controller';
-// import { AppService } from './app.service';
-// import { AuthModule } from './auth/auth.module';
-
-// @Module({
-//   imports: [AuthModule],
-//   controllers: [AppController],
-//   providers: [AppService],
-// })
-// export class AppModule {}
-
-// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from 'prisma/prisma.module';
 import { UserSettingsModule } from './user-settings/user-settings.module';
-import { NotificationModule } from './Notification_Test/notification.module';
+import { NotificationModule } from './notifications/notification.module';
+import { PostsModule } from './posts/posts.module';
+import { JobPostsModule } from './JobPosts/JobPosts.module';
+import { CompaniesModule } from './company/company.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, UserSettingsModule, NotificationModule],
+  imports: [
+    AuthModule,
+    PrismaModule,
+    UserSettingsModule,
+    NotificationModule,
+    PostsModule,
+    CompaniesModule,
+    JobPostsModule,
+  ],
 })
 export class AppModule {}

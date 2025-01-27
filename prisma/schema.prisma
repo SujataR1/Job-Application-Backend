@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -25,6 +25,7 @@ enum OTPType {
   TwoFa
   PasswordReset
   EmailVerification
+  CompanyInvitation
 }
 
 enum FriendRequestStatusType {
@@ -58,6 +59,8 @@ model User {
   companyId                  String?
   companyPageAdmin           Companies[]     @relation("CompanyAdmins")
   jobPoster                  JobPostings[]   @relation("JobPoster")
+  companiesJobPostingAllowed Companies[]     @relation("JobPostingPermissions")
+  jobPostUpdater             JobPostings[]   @relation("JobPostUpdater")
   applications               Application[]
   friendsInitiator           Friends[]       @relation("FriendsInitiator")
   friendsReceiver            Friends[]       @relation("FriendsReceiver")
@@ -92,7 +95,7 @@ model Industries {
 
 model Companies {
   id                     String                   @id @unique @default(uuid())
-  name                   String
+  name                   String                   @unique
   description            String
   websiteLink            String?
   industryLinks          IndustryCompany[]
@@ -106,6 +109,9 @@ model Companies {
   analytics              CompanyAnalytics?
   pageSettings           CompanyPageSettings?
   CompanyPageAttachments CompanyPageAttachments[]
+  usersAllowedJobPosting User[]                   @relation("JobPostingPermissions")
+  OTP                    OTP[]
+  companyLogo            String?
 }
 
 model Messages {
@@ -145,10 +151,12 @@ model UserBlockList {
 model JobPostings {
   id             String     @id @default(uuid())
   title          String
+  summary        String?
   description    String
   locations      Json
   address        Json?
   skills         Json
+  requirements   Json?
   min_experience Float      @default(0.0)
   max_experience Float?
   min_salary     Float?
@@ -157,6 +165,8 @@ model JobPostings {
   company        Companies? @relation(fields: [companyId], references: [id], onDelete: Cascade)
   posterId       String?
   poster         User?      @relation("JobPoster", fields: [posterId], references: [id], onDelete: Cascade)
+  updater        User?      @relation("JobPostUpdater", fields: [updaterId], references: [id], onDelete: Cascade)
+  updaterId      String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @default(now()) @updatedAt
 
@@ -177,14 +187,17 @@ model Application {
 }
 
 model OTP {
-  otp       String   @id @unique
+  otp       String     @id @unique
   otpType   OTPType
-  createdAt DateTime @default(now())
+  createdAt DateTime   @default(now())
   expiry    DateTime
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String? // Optional in case OTPs are not always linked to a company
+  company   Companies? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([userId, otpType, expiry])
+  @@index([companyId])
 }
 
 model Blacklisted_Tokens {
@@ -272,17 +285,19 @@ model Posts {
   attachments Post_Attachments[]
   Comments    Comments[]
 
-  originalPostId String? 
+  originalPostId String?
   originalPost   Posts?  @relation("OriginalPost", fields: [originalPostId], references: [id], onDelete: SetNull)
+  allowSharing   Boolean @default(true)
+  allowReposts   Boolean @default(false)
   reposts        Posts[] @relation("OriginalPost")
-  isRepost       Boolean @default(false) 
+  isRepost       Boolean @default(false)
 }
 
 model Post_Attachments {
   id             String   @id @default(uuid())
   postId         String
   post           Posts    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  attachmentPath Json 
+  attachmentPath Json
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
 }
@@ -306,7 +321,7 @@ model Comments {
 
 model Comment_Attachments {
   id             String    @id @default(uuid())
-  attachmentPath Json 
+  attachmentPath Json
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @default(now()) @updatedAt
   Comments       Comments? @relation(fields: [commentsId], references: [id], onDelete: Cascade)
@@ -334,7 +349,7 @@ model CompanyPageAttachments {
 model MessageAttachments {
   id             String   @id @default(uuid())
   messageId      String
-  attachmentPath Json 
+  attachmentPath Json
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
 
@@ -346,7 +361,7 @@ model Assessment {
   jobPostingId String
   applicantId  String
   messageId    String
-  instructions String? 
+  instructions String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now()) @updatedAt
 
