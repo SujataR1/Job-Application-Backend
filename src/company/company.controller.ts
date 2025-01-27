@@ -21,12 +21,34 @@ import {
 } from '@nestjs/swagger';
 import { CompanyService } from './company.service';
 import { IndustryDto } from './dto/industry.dto';
+import { CreateCompanyDto } from './dto/create-company.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Companies')
 @Controller('companies')
 export class CompaniesController {
   constructor(private readonly companiesService: CompanyService) {}
+
+  @Post('create')
+  @ApiOperation({ summary: 'Create a company' })
+  @ApiBearerAuth()
+  @ApiBody({
+    description: 'Details of the company',
+    type: CreateCompanyDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Creates a company',
+  })
+  async create(
+    @Headers('Authorization') authorizationHeader: string,
+    @Body() createComapnyDto: CreateCompanyDto,
+  ) {
+    return this.companiesService.createCompany(
+      createComapnyDto,
+      authorizationHeader,
+    );
+  }
 
   // 1. List companies the user is involved in
   @Get('involved')
