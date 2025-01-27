@@ -62,7 +62,7 @@ export class AuthService {
       }
     }
 
-    // Hash the password before storing it
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create the user in the database
@@ -601,3 +601,23 @@ export class AuthService {
     }
   }
 }
+
+
+
+// app.post('/auth/login', async (req, res) => {
+//   try {
+//       const user = await authenticateUser(req.body.email, req.body.password);
+//       if (user) {
+//           const token = generateToken(user); // Generate your JWT token
+//           res.status(200).json({
+//               message: 'You have successfully logged in!',
+//               user_type: user.userType, // Ensure this is populated
+//               authorization: token, // Ensure this is generated
+//           });
+//       } else {
+//           res.status(401).json({ message: 'Invalid email or password' });
+//       }
+//   } catch (error) {
+//       res.status(500).json({ message: 'Internal server error' });
+//   }
+// });

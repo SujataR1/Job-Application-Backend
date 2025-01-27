@@ -31,7 +31,7 @@ import * as multer from 'multer';
 @ApiTags('Posts')
 @Controller('posts')
 export class PostsController {
-  constructor(private readonly postsService: PostsService) {}
+  constructor(private readonly postsService: PostsService) { }
 
   private readonly uploadMiddleware = multer.diskStorage({
     destination: 'uploads/posts',
@@ -60,8 +60,11 @@ export class PostsController {
     @Body() createPostDto: CreatePostDto,
     @UploadedFiles() files: Express.Multer.File[],
   ) {
-    const filePaths = files.map((file) => file.path);
+    //const filePaths = files.map((file) => file.path);
+    const filePaths = files ? files.map((file) => file.path) : [];
+
     return this.postsService.createPost(token, createPostDto, filePaths);
+
   }
 
   /**

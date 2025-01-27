@@ -498,6 +498,65 @@ export class CompanyService {
     };
   }
 
+  async getAllCompanies(limitRange: string) {
+    if (!limitRange) {
+      throw new BadRequestException('The "limit" parameter is required.');
+    }
+
+    // Validate the limit range format
+    const limitRegex = /^\d+-\d+$/;
+    if (!limitRegex.test(limitRange)) {
+      throw new BadRequestException(
+        'Invalid limit format. Use "start-end" format, e.g., "1-12".',
+      );
+    }
+
+    // Parse limit values
+    const [start, end] = limitRange.split('-').map(Number);
+
+    if (isNaN(start) || isNaN(end) || start < 1 || end < start) {
+      throw new BadRequestException('Invalid limit values provided.');
+    }
+
+    const take = end - start + 1;
+    const skip = start - 1;
+
+    // Fetch companies with required fields
+    const companies = await this.prisma.companies.findMany({
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        websiteLink: true,
+        industryLinks: true,
+        about: true,
+        createdAt: true,
+        _count: {
+          select: {
+            usersFollowing: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip,
+      take,
+    });
+
+    // Format response to include usersFollowing count properly
+    return companies.map((company) => ({
+      id: company.id,
+      name: company.name,
+      description: company.description,
+      websiteLink: company.websiteLink,
+      industryLinks: company.industryLinks,
+      about: company.about,
+      createdAt: company.createdAt,
+      usersFollowing: company._count.usersFollowing,
+    }));
+  }
+
   async getCompanyById(companyId: string) {
     // Fetch the company details by ID with only the specified fields
     const company = await this.prisma.companies.findUnique({
