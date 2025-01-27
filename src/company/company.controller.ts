@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Param,
   Body,
@@ -50,6 +51,69 @@ export class CompaniesController {
     );
   }
 
+  @Patch('update')
+  @ApiOperation({ summary: 'Update a company' })
+  @ApiBearerAuth()
+  @ApiBody({
+    description: 'Updated company details along with companyId',
+    schema: {
+      type: 'object',
+      properties: {
+        companyId: {
+          type: 'string',
+          description: 'ID of the company to be updated',
+        },
+        updateData: {
+          type: 'object',
+          description: 'Fields to update',
+          $ref: '#/components/schemas/CreateCompanyDto',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Updates a company',
+  })
+  async update(
+    @Headers('Authorization') authorizationHeader: string,
+    @Body() body: { companyId: string; updateData: Partial<CreateCompanyDto> },
+  ) {
+    const { companyId, updateData } = body;
+    return this.companiesService.updateCompany(
+      companyId,
+      updateData,
+      authorizationHeader,
+    );
+  }
+
+  @Delete('delete')
+  @ApiOperation({ summary: 'Delete a company' })
+  @ApiBearerAuth()
+  @ApiBody({
+    description: 'Company ID to delete',
+    schema: {
+      type: 'object',
+      properties: {
+        companyId: {
+          type: 'string',
+          description: 'ID of the company to be deleted',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Deletes a company',
+  })
+  async delete(
+    @Headers('Authorization') authorizationHeader: string,
+    @Body() body: { companyId: string },
+  ) {
+    const { companyId } = body;
+    return this.companiesService.deleteCompany(companyId, authorizationHeader);
+  }
+
   // 1. List companies the user is involved in
   @Get('involved')
   @ApiOperation({ summary: 'List companies the user is involved in' })
@@ -95,6 +159,34 @@ export class CompaniesController {
     return this.companiesService.listCompaniesJobPostingPermissionIn(
       authorizationHeader,
     );
+  }
+
+  @Post('all')
+  @ApiOperation({ summary: 'Get all companies with pagination' })
+  @ApiBearerAuth()
+  @ApiBody({
+    description: 'Pagination range in the format "1-12", "13-27", etc.',
+    schema: {
+      type: 'object',
+      properties: {
+        limit: {
+          type: 'string',
+          description: 'Pagination range (e.g., "1-12")',
+          example: '1-12',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns a list of companies within the specified range',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request if the limit parameter is missing or invalid',
+  })
+  async getAllCompanies(@Body() body: { limit: string }) {
+    return this.companiesService.getAllCompanies(body.limit);
   }
 
   // 4. Get company by ID
